@@ -1,4 +1,4 @@
-package com.weaverplatform.nifi;
+package com.weaverplatform.import.xmi;
 
 import com.jcabi.xml.XML;
 import com.jcabi.xml.XMLDocument;
