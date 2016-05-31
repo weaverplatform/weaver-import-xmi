@@ -161,12 +161,12 @@ public class ImportXmiTest {
   }
 
   @Test
-  public void getNamedItemOnNodeTest(){
+  public void getAttributeAsNodeTest(){
 
   }
 
   @Test
-  public void getValueTest(){
+  public void getValueFromNodeTest(){
 
   }
 

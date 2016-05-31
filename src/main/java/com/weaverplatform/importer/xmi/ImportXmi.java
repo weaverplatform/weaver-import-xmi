@@ -60,17 +60,14 @@ public class ImportXmi {
 
       XML doc = new XMLDocument(xmiContent);
 
-      String xpath = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
-      
-      HashMap<String, String> xmiClasses = importXmi.mapXmiClasses(doc.nodes(xpath));
+      String xpathToXmiClasses = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
+      String xpathToXmiAssociations = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Association";
 
-      System.out.println(xmiClasses.size());
+      HashMap<String, String> xmiClasses = importXmi.mapXmiClasses(doc.nodes(xpathToXmiClasses));
 
       importXmi.mapXmiClassesToWeaverIndividuals(xmiClasses);
 
-      xpath = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Association";
-
-      importXmi.mapXmiAssociationsToWeaverAnnotations(doc.nodes(xpath), xmiClasses);
+      importXmi.mapXmiAssociationsToWeaverAnnotations(doc.nodes(xpathToXmiAssociations), xmiClasses);
 
     } catch (IOException e) {
       //catch IOUtils.toString()
@@ -86,11 +83,12 @@ public class ImportXmi {
   public void mapXmiAssociationsToWeaverAnnotations(List<XML> xmiAssocations, HashMap<String, String> xmiClasses){
     for(XML association : xmiAssocations){
 
-      //there exists nodes without attribute name
-      if(notNull(getNamedItemOnNode(association, "name"))){
+      //there are associations without attribute name
+      //we make sure the attribute name is available
+      if(notNull(getAttributeAsNode(association, "name"))){
 
         //we need the name of the association later, so we save it locally
-        String associationName = getValue(getNamedItemOnNode(association, "name"));
+        String associationName = getValueFromNode(getAttributeAsNode(association, "name"));
 
         //we go inside the association-tree looking for a specific one
         mapSpecificXmiAssociationToWeaverAnnotation(associationName, association, xmiClasses);
@@ -100,7 +98,7 @@ public class ImportXmi {
   }
 
   /**
-   * map a specific association to weaver (as annotation) where its taggedValue equals Source.
+   * map a specific association to weaver (as annotation) when its taggedValue equals Source.
    * @param associationName : label name for future annotation attribute label
    * @param currentAssociation : an XML document
    * @param xmiClasses : HashMap which contains the xmi Class id
@@ -108,36 +106,47 @@ public class ImportXmi {
    */
   public void mapSpecificXmiAssociationToWeaverAnnotation(String associationName, XML currentAssociation, HashMap<String, String> xmiClasses){
 
-    String xpath = "//UML.Association.connection/UML.AssociationEnd";
-    List<XML> associationEnds = currentAssociation.nodes(xpath);
+    /** currentAssociation node
+     *
+     * <association>
+     *     <connection>
+     *         <end type=xmiId>
+     *            <taggedValues>
+     *                <taggedValue value=source></taggedValue>
+     *            </taggedValues>
+     *         </end>
+     *     </connection>
+     * </association>
+     *
+     */
 
-    //we go a lever deeper within the association-tree
-    for(XML associationEnd: associationEnds){
+    String xpathToAssociationEndNodes = "//UML.Association.connection/UML.AssociationEnd";
+    String xpathToTaggedValueNodes = "//UML.ModelElement.taggedValue/UML.TaggedValue";
 
-      //we need the individual id, that is known in the xmi-tree as attribute Type
-      String type = getValue(getNamedItemOnNode(associationEnd, "type"));
+    List<XML> associationEndNodes = currentAssociation.nodes(xpathToAssociationEndNodes);
 
-      xpath = "//UML.ModelElement.taggedValue/UML.TaggedValue";
-      List<XML> taggedValues = associationEnd.nodes(xpath);
+    for(XML associationEndNode: associationEndNodes){
 
-      //at last, our deepest level within the association-tree, we now have specific one
-      for(XML taggedValue : taggedValues){
+      List<XML> taggedValueNodes = associationEndNode.nodes(xpathToTaggedValueNodes);
 
-        String taggedValueAttributeValue = getValue(getNamedItemOnNode(taggedValue, "value"));
+      //we have multiple taggedValueNodes, so we need to loop trough them
+      for(XML taggedValueNode : taggedValueNodes){
 
-        //only if the attribute is the SOURCE, we can create the annotation
-        if(taggedValueAttributeValue.equals("source")){
+        String taggedAttribute = getValueFromNode(getAttributeAsNode(taggedValueNode, "value"));
 
-          //now we found the right association, we use the saved Class id which equals the Type-attribute
-          String classID = xmiClasses.get(type);
+        if(taggedAttribute.equals("source")){
 
-          //System.out.println("classID: " + classID + ", associationName: " + associationName);
+          //the associationEndNode type attribute is the xmi-id.
+          //we have the xmi-id as key stored in the xmiClasses hashmap.
+          //now we want the corresponding xmiClassName
+          //we fetch the name from the hashmap by the assocationEndNode type attribute as key
+          String xmiName = xmiClasses.get(getValueFromNode(getAttributeAsNode(associationEndNode, "type")));
 
           //create weaver annotation
           HashMap<String, Object> attributes = new HashMap<>();
           attributes.put("label", associationName);
           attributes.put("celltype", "individual");
-          toWeaverAnnotation(attributes, classID);
+          toWeaverAnnotation(attributes, xmiName);
 
         }
       }
@@ -174,8 +183,8 @@ public class ImportXmi {
 
     for (XML xmiClass : xmiClasses) {
 
-      String name = formatName(getNamedItemOnNode(xmiClass, "name"));
-      String xmiID = getValue(getNamedItemOnNode(xmiClass, "xmi.id"));
+      String name = formatName(getAttributeAsNode(xmiClass, "name"));
+      String xmiID = getValueFromNode(getAttributeAsNode(xmiClass, "xmi.id"));
 
       map.put(xmiID, name);
     }
@@ -252,7 +261,7 @@ public class ImportXmi {
    * @param attributeName
    * @return
    */
-  public org.w3c.dom.Node getNamedItemOnNode(XML doc, String attributeName){
+  public org.w3c.dom.Node getAttributeAsNode(XML doc, String attributeName){
     return doc.node().getAttributes().getNamedItem(attributeName);
   }
 
@@ -261,12 +270,12 @@ public class ImportXmi {
    * @param node
    * @return String value
    */
-  public String getValue(org.w3c.dom.Node node){
+  public String getValueFromNode(org.w3c.dom.Node node){
     return node.getTextContent();
   }
 
   public String formatName(org.w3c.dom.Node node){
-    String textvalue = getValue(node);
+    String textvalue = getValueFromNode(node);
 
     String[] split = textvalue.split(" ");
 
@@ -313,35 +322,44 @@ public class ImportXmi {
    * Creates an Weaver Individual
    * @param attributes: weaver entity attributes
    * @param id: weaver entity id
-   * @return Weaver Entity
+   * @return Weaver Entity on succes or null on failure
    */
   public Entity toWeaverIndividual(HashMap<String, Object> attributes, String id){
 
     HashMap<String, Object> defaultAttributes = new HashMap<>();
-    attributes.put("name", "Unnamed");
+    defaultAttributes.put("name", "Unnamed");
 
-    //create object
-    Entity parent = weaver.add(attributes == null ? defaultAttributes : attributes, EntityType.INDIVIDUAL, id);
+    try {
 
-    //create first annotation collection
-    Entity aAnnotions = weaver.add(new HashMap<String, Object>(), EntityType.COLLECTION, weaver.createRandomUUID());
-    parent.linkEntity(RelationKeys.ANNOTATIONS, aAnnotions);
+      //create object
+      Entity parent = weaver.add(attributes == null ? defaultAttributes : attributes, EntityType.INDIVIDUAL, id);
 
-    //create collection properties
-    Entity aCollection = weaver.add(new HashMap<String, Object>(), EntityType.COLLECTION, weaver.createRandomUUID());
-    parent.linkEntity(RelationKeys.PROPERTIES, aCollection);
+      //create first annotation collection
+      Entity aAnnotions = weaver.add(new HashMap<String, Object>(), EntityType.COLLECTION, weaver.createRandomUUID());
+      parent.linkEntity(RelationKeys.ANNOTATIONS, aAnnotions);
 
-    return parent;
+      //create collection properties
+      Entity aCollection = weaver.add(new HashMap<String, Object>(), EntityType.COLLECTION, weaver.createRandomUUID());
+      parent.linkEntity(RelationKeys.PROPERTIES, aCollection);
+
+      return parent;
+
+    }catch(NullPointerException e){
+      System.out.println("weaver connection error/node not found.");
+    }
+
+    return null;
   }
 
   /**
    * Creates an Weaver Annotation
    * @param attributes
    * @param id
-   * @return
+   * @return Weaver Entity on succes or null on failure
    */
   public Entity toWeaverAnnotation(HashMap<String, Object> attributes, String id){
 
+    try {
       //retrieve parent
       Entity parent = weaver.get(id);
 
@@ -349,10 +367,16 @@ public class ImportXmi {
       Entity aAnnotations = parent.getRelations().get(RelationKeys.ANNOTATIONS);
 
       //create first annotation
-      Entity annotation = weaver.add(attributes==null?new HashMap<String, Object>():attributes, EntityType.ANNOTATION, weaver.createRandomUUID());
+      Entity annotation = weaver.add(attributes == null ? new HashMap<String, Object>() : attributes, EntityType.ANNOTATION, weaver.createRandomUUID());
       aAnnotations.linkEntity(annotation.getId(), annotation);
 
       return annotation;
+
+    }catch(NullPointerException e){
+      System.out.println("weaver connection error/node not found.");
+    }
+
+    return null;
   }
 
 }
