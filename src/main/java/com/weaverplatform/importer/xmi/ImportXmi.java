@@ -20,6 +20,8 @@ import java.util.Map;
 
 /**
  * Created by Jonathan Smit, Sysunite 2016
+ *
+ * This program is written to import xmi-data and map parts of it to Weaver objects by the weaver-sdk-java.
  */
 public class ImportXmi {
 
@@ -51,21 +53,30 @@ public class ImportXmi {
 
     ImportXmi importXmi = new ImportXmi(args[0], args[1]);
 
-    XML xmldocument = importXmi.getFormatedXML();
+    importXmi.run();
+
+  }
+
+  /**
+   * The start method with custom operations on this class
+   */
+  public void run(){
+
+    XML xmldocument = getFormatedXML();
 
     String xpathToXmiClasses = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
     String xpathToXmiAssociations = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Association";
 
     //map the xmi classes to a hashmap
     //let jcabi fetch the xmi class nodes by the right xpath
-    HashMap<String, String> xmiClasses = importXmi.mapXmiClasses(xmldocument.nodes(xpathToXmiClasses));
+    HashMap<String, String> xmiClasses = mapXmiClasses(xmldocument.nodes(xpathToXmiClasses));
 
     //map the xmiClasses to weaver as weaver individuals
-    importXmi.mapXmiClassesToWeaverIndividuals(xmiClasses);
+    mapXmiClassesToWeaverIndividuals(xmiClasses);
 
     //map them as annotations to weaver and link them to the xmiClasses
     //let jcabi fetch the associations by the right xpath
-    importXmi.mapXmiAssociationsToWeaverAnnotations(xmldocument.nodes(xpathToXmiAssociations), xmiClasses);
+    mapXmiAssociationsToWeaverAnnotations(xmldocument.nodes(xpathToXmiAssociations), xmiClasses);
 
   }
 
