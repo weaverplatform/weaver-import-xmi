@@ -51,7 +51,7 @@ public class ImportXmi {
 
     ImportXmi importXmi = new ImportXmi(args[0], args[1]);
 
-    XML xmldocument = importXmi.getXML();
+    XML xmldocument = importXmi.getFormatedXML();
 
     String xpathToXmiClasses = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
     String xpathToXmiAssociations = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Association";
@@ -70,29 +70,30 @@ public class ImportXmi {
   }
 
   /**
-   * generates and returns a new Jcabi xml document based on GetFileContents()
-   * @return
+   * return the file contents as jcabi XML document
+   * @return XMLDocument
    */
   public XML getXML(){
-    return new XMLDocument(getFileContents());
+    return new XMLDocument(getFileContents(read()));
   }
 
   /**
-   * returns the file contents as formated xmi-String
-   * uses: formatXmiContent()
-   * @return
+   * returns the file contents as jcabi XML document in a formatted way.
+   * the jcabi XML Document has constructor argument getFormattedFileContents().
+   * @return XMLDocument
    */
-  public String getFileContents(){
-    return formatXmiContent(read());
+  public XML getFormatedXML(){
+    return new XMLDocument(getFormatedFileContents(read()));
   }
 
-  public String formatXmiContent(InputStream contents){
+  /**
+   * returns the file contents - an InputStream- as String
+   * @return String
+   */
+  public String getFileContents(InputStream contents){
     try {
 
       String xmiContent = IOUtils.toString(contents);
-
-      //replace ':' to ignore xml namespace errors while reading with xpath
-      xmiContent = xmiContent.replaceAll("UML:", "UML.");
 
       return xmiContent;
 
@@ -101,6 +102,20 @@ public class ImportXmi {
     }
 
     return null;
+  }
+
+  /**
+   * Returns the file contents as String (modified original)
+   * @return
+   */
+  public String getFormatedFileContents(InputStream contents){
+
+    String filecontent = getFileContents(contents);
+
+    //replace ':' to ignore xml namespace errors while reading with xpath
+    filecontent = filecontent.replaceAll("UML:", "UML.");
+
+    return filecontent;
   }
 
   /**
@@ -220,6 +235,11 @@ public class ImportXmi {
     return map;
   }
 
+  /**
+   * check if an org.w3c.dom.Node is not null
+   * @param node: org.w3c.dom.Node
+   * @return true if not null, false if otherwise
+   */
   public boolean notNull(org.w3c.dom.Node node){
     if(node != null){
       return true;
@@ -227,6 +247,11 @@ public class ImportXmi {
     return false;
   }
 
+  /**
+   * Checks if a String is not null
+   * @param value: String
+   * @return true if not null, false if otherwise
+   */
   public boolean notNull(String value){
     if(value != null){
       return true;
@@ -302,6 +327,11 @@ public class ImportXmi {
     return node.getTextContent();
   }
 
+  /**
+   * Returns the textValue from a org.w3c.dom.Node as custom formatted String
+   * @param node
+   * @return String
+   */
   public String formatName(org.w3c.dom.Node node){
     String textvalue = getValueFromNode(node);
 
@@ -319,6 +349,11 @@ public class ImportXmi {
     return stringBuffer.toString();
   }
 
+  /**
+   * Ignores characters other then letters and return the result with letters only
+   * @param str input
+   * @return String formatted
+   */
   public String stripNonCharacters(String str){
 
     StringBuilder result = new StringBuilder();
@@ -333,6 +368,11 @@ public class ImportXmi {
 
   }
 
+  /**
+   * Uppercase the first Character of a String, changes all others character to lowercase.
+   * @param str
+   * @return new String
+   */
   public String toCamelCase(String str){
     str = str.toLowerCase();
 

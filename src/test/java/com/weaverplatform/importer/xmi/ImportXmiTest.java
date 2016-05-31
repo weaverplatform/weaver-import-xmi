@@ -47,7 +47,7 @@ public class ImportXmiTest {
   public void mapXmiAssociationsToWeaverAnnotationsTest(){
     ImportXmi importXmi = new ImportXmi(argument0, argument1);
 
-    XML doc = importXmi.getXML();
+    XML doc = importXmi.getFormatedXML();
 
     //xpath to xmi classes
     String xpath = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
@@ -124,10 +124,9 @@ public class ImportXmiTest {
   public void readTest(){
     ImportXmi importXmi = new ImportXmi(argument0, argument1);
 
-    String fileContents = importXmi.getFileContents();
+    InputStream fileContents = importXmi.read();
 
     assertTrue(fileContents != null);
-    assertTrue(fileContents.length() > 0);
 
   }
 
@@ -141,7 +140,7 @@ public class ImportXmiTest {
   @Test
   public void getAttributeAsNodeTest(){
     ImportXmi importXmi = new ImportXmi(argument0, argument1);
-    XML doc = importXmi.getXML();
+    XML doc = importXmi.getFormatedXML();
     String xpathToClassNodes = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
     List<XML> nodes = doc.nodes(xpathToClassNodes);
 
@@ -151,7 +150,7 @@ public class ImportXmiTest {
   @Test
   public void getValueFromNodeTest(){
     ImportXmi importXmi = new ImportXmi(argument0, argument1);
-    XML doc = importXmi.getXML();
+    XML doc = importXmi.getFormatedXML();
     String xpathToClassNodes = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
     List<XML> nodes = doc.nodes(xpathToClassNodes);
 
