@@ -102,6 +102,21 @@ public class ImportXmiTest {
 
   @Test
   public void notNullTest(){
+    ImportXmi importXmi = new ImportXmi(argument0, argument1);
+
+    String contents = null;
+    assertFalse(importXmi.notNull(contents));
+
+    contents = "hello";
+    assertTrue(importXmi.notNull(contents));
+
+    XML doc = importXmi.getXML();
+    String xpathToClassNodes = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
+    List<XML> nodes = doc.nodes(xpathToClassNodes);
+
+    org.w3c.dom.Node node = importXmi.getAttributeAsNode(nodes.get(0), "name");
+
+    assertTrue(importXmi.notNull(node));
 
   }
 
@@ -125,12 +140,24 @@ public class ImportXmiTest {
 
   @Test
   public void getAttributeAsNodeTest(){
+    ImportXmi importXmi = new ImportXmi(argument0, argument1);
+    XML doc = importXmi.getXML();
+    String xpathToClassNodes = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
+    List<XML> nodes = doc.nodes(xpathToClassNodes);
 
+    assertTrue(importXmi.notNull(importXmi.getAttributeAsNode(nodes.get(0), "name")));
   }
 
   @Test
   public void getValueFromNodeTest(){
+    ImportXmi importXmi = new ImportXmi(argument0, argument1);
+    XML doc = importXmi.getXML();
+    String xpathToClassNodes = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
+    List<XML> nodes = doc.nodes(xpathToClassNodes);
 
+    String nodeValue = importXmi.getValueFromNode(importXmi.getAttributeAsNode(nodes.get(0), "name"));
+    assertTrue(importXmi.notNull(nodeValue));
+    assertTrue(nodeValue.length() > 0);
   }
 
   @Test
