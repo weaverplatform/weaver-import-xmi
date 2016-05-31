@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -46,32 +47,22 @@ public class ImportXmiTest {
   public void mapXmiAssociationsToWeaverAnnotationsTest(){
     ImportXmi importXmi = new ImportXmi(argument0, argument1);
 
-    try {
-      //optional modification: replace namespace UML to have a valid xpath later on
-      String xmi = IOUtils.toString(importXmi.read());
-      xmi.replaceAll("UML:", "UML.");
+    XML doc = importXmi.getXML();
 
-      XML doc = new XMLDocument(xmi);
+    //xpath to xmi classes
+    String xpath = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
 
-      //xpath to xmi classes
-      String xpath = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
+    HashMap<String, String> xmiClasses = importXmi.mapXmiClasses(doc.nodes(xpath));
 
-      HashMap<String, String> xmiClasses = importXmi.mapXmiClasses(doc.nodes(xpath));
+    assertEquals(xmiClasses.size(), 47);
 
-      assertEquals(xmiClasses.size(), 47);
+    importXmi.mapXmiClassesToWeaverIndividuals(xmiClasses);
 
-      importXmi.mapXmiClassesToWeaverIndividuals(xmiClasses);
+    xpath = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Association";
 
-      xpath = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Association";
-
-      importXmi.mapXmiAssociationsToWeaverAnnotations(doc.nodes(xpath), xmiClasses);
+    importXmi.mapXmiAssociationsToWeaverAnnotations(doc.nodes(xpath), xmiClasses);
 
       //assert??
-
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
   }
 
   @Test
@@ -83,53 +74,30 @@ public class ImportXmiTest {
   public void mapXmiClassesToWeaverIndividualsTest(){
     ImportXmi importXmi = new ImportXmi(argument0, argument1);
 
-    try {
-      //optional modification: replace namespace UML to have a valid xpath later on
-      String xmiContent = IOUtils.toString(importXmi.read());
-      xmiContent = xmiContent.replaceAll("UML:", "UML.");
-
-      //System.out.println(xmiContent);
-
-      XML doc = new XMLDocument(xmiContent);
+      XML doc = importXmi.getXML();
 
       //xpath to xmi classes
       String xpath = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
 
       assertTrue(doc.nodes(xpath).size() > 0);
-//
+
       HashMap<String, String> xmiClasses = importXmi.mapXmiClasses(doc.nodes(xpath));
 
       assertTrue(xmiClasses.size() > 0);
-
-      //importXmi.mapXmiClassesToWeaverIndividuals(xmiClasses);
-
-      //assert??
-
-    }catch(IOException e){
-      e.printStackTrace();
-    }
   }
 
   @Test
   public void mapXmiClassesTest(){
     ImportXmi importXmi = new ImportXmi(argument0, argument1);
-    try {
-      //optional modification: replace namespace UML to have a valid xpath later on
-      String xmi = IOUtils.toString(importXmi.read());
-      xmi.replaceAll("UML:", "UML.");
 
-      XML doc = new XMLDocument(xmi);
+    XML doc = importXmi.getXML();
 
-      //xpath to xmi classes
-      String xpath = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
+    //xpath to xmi classes
+    String xpath = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
 
-      HashMap<String, String> xmiClasses = importXmi.mapXmiClasses(doc.nodes(xpath));
+    HashMap<String, String> xmiClasses = importXmi.mapXmiClasses(doc.nodes(xpath));
 
-      assertEquals(xmiClasses.size(), 47);
-
-    }catch(IOException e){
-      e.printStackTrace();
-    }
+    assertEquals(xmiClasses.size(), 47);
   }
 
   @Test
@@ -141,15 +109,10 @@ public class ImportXmiTest {
   public void readTest(){
     ImportXmi importXmi = new ImportXmi(argument0, argument1);
 
-    try {
-      //optional modification: replace namespace UML to have a valid xpath later on
-      String xmi = IOUtils.toString(importXmi.read());
+    String fileContents = importXmi.getFileContents();
 
-      assertTrue(xmi != null && xmi.length()>0);
-
-    }catch(IOException e){
-      e.printStackTrace();
-    }
+    assertTrue(fileContents != null);
+    assertTrue(fileContents.length() > 0);
 
   }
 

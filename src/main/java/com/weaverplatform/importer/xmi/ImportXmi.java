@@ -51,28 +51,51 @@ public class ImportXmi {
 
     ImportXmi importXmi = new ImportXmi(args[0], args[1]);
 
+    XML xmldocument = importXmi.getXML();
+
+    String xpathToXmiClasses = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
+    String xpathToXmiAssociations = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Association";
+
+    HashMap<String, String> xmiClasses = importXmi.mapXmiClasses(xmldocument.nodes(xpathToXmiClasses));
+
+    importXmi.mapXmiClassesToWeaverIndividuals(xmiClasses);
+
+    importXmi.mapXmiAssociationsToWeaverAnnotations(xmldocument.nodes(xpathToXmiAssociations), xmiClasses);
+
+  }
+
+  /**
+   * generates and returns a new Jcabi xml document based on GetFileContents()
+   * @return
+   */
+  public XML getXML(){
+    return new XMLDocument(getFileContents());
+  }
+
+  /**
+   * returns the file contents as formated xmi-String
+   * uses: formatXmiContent()
+   * @return
+   */
+  public String getFileContents(){
+    return formatXmiContent(read());
+  }
+
+  public String formatXmiContent(InputStream contents){
     try {
 
-      String xmiContent = IOUtils.toString(importXmi.read());
+      String xmiContent = IOUtils.toString(contents);
 
       //replace ':' to ignore xml namespace errors while reading with xpath
       xmiContent = xmiContent.replaceAll("UML:", "UML.");
 
-      XML doc = new XMLDocument(xmiContent);
+      return xmiContent;
 
-      String xpathToXmiClasses = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
-      String xpathToXmiAssociations = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Association";
-
-      HashMap<String, String> xmiClasses = importXmi.mapXmiClasses(doc.nodes(xpathToXmiClasses));
-
-      importXmi.mapXmiClassesToWeaverIndividuals(xmiClasses);
-
-      importXmi.mapXmiAssociationsToWeaverAnnotations(doc.nodes(xpathToXmiAssociations), xmiClasses);
-
-    } catch (IOException e) {
-      //catch IOUtils.toString()
-      e.printStackTrace();
+    }catch(IOException e) {
+      System.out.println("IOUtils.toString() fail");
     }
+
+    return null;
   }
 
   /**
