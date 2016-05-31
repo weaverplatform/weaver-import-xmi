@@ -62,8 +62,10 @@ public class ImportXmi {
    */
   public void run(){
 
+    //read the xml file and get a formatted Jcabi XML document.
     XML xmldocument = getFormatedXML();
 
+    //because we have formatted Jcabi XMLDocument, we can have special xpaths to the nodes we want
     String xpathToXmiClasses = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
     String xpathToXmiAssociations = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Association";
 
