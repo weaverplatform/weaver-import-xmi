@@ -61,10 +61,7 @@ public class ImportXmi {
     HashMap<String, String> xmiClasses = mapXmiClasses(xmldocument.nodes(xpathToXmiClasses));
     //map the xmiClasses to weaver as weaver individuals
     createWeaverIndividuals(xmiClasses);
-
-    List<XML> validAssociations = getAssociationsWithAttribute(xmldocument.nodes(xpathToXmiAssociations), "name");
-
-    createWeaverAnnotations(validAssociations, xmiClasses);
+    createWeaverAnnotations(getAssociationsWithAttribute(xmldocument.nodes(xpathToXmiAssociations), "name"), xmiClasses);
   }
 
   /**
