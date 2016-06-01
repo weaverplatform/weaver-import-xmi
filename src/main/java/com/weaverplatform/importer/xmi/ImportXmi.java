@@ -15,7 +15,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.file.Path;
 import java.util.Map;
 
 /**
@@ -258,9 +257,9 @@ public class ImportXmi {
    */
   public InputStream read(){
     if(!hasPath(filePath)) {
-      return createInputStreamFromByteArray(readFromTestClassResourceDirectory(filePath));
+      return createInputStream(readFromTestClassResourceDirectory(filePath));
     }
-    return createInputStreamFromByteArray(readFromUnixPath(filePath));
+    return createInputStream(readFromUnixPath(filePath));
   }
 
   /**
@@ -300,7 +299,7 @@ public class ImportXmi {
    * @param contents
    * @return InputStream on succes, null on failure
    */
-  private InputStream createInputStreamFromByteArray(byte[] contents){
+  private InputStream createInputStream(byte[] contents){
     try {
       return new ByteArrayInputStream(IOUtils.toByteArray(new ByteArrayInputStream(contents)));
     }catch(IOException e){
