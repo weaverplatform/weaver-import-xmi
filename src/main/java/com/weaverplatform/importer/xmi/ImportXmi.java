@@ -81,7 +81,7 @@ public class ImportXmi {
    * @return XMLDocument
    */
   public XML getXML(){
-    return new XMLDocument(getFileContents(read()));
+    return new XMLDocument(toString(read()));
   }
 
   /**
@@ -90,14 +90,14 @@ public class ImportXmi {
    * @return XMLDocument
    */
   public XML getFormatedXML(){
-    return new XMLDocument(getFormatedFileContents(read()));
+    return new XMLDocument(toFormattedString(read()));
   }
 
   /**
    * returns the file contents - an InputStream- as String
    * @return String
    */
-  public String getFileContents(InputStream contents){
+  public String toString(InputStream contents){
     try {
       return IOUtils.toString(contents);
     }catch(IOException e) {
@@ -110,9 +110,9 @@ public class ImportXmi {
    * Returns the file contents as String (modified original)
    * @return
    */
-  public String getFormatedFileContents(InputStream contents){
+  public String toFormattedString(InputStream contents){
     //replace ':' to ignore xml namespace errors while reading with xpath
-    return getFileContents(contents).replaceAll("UML:", "UML.");
+    return toString(contents).replaceAll("UML:", "UML.");
   }
 
   /**
