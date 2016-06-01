@@ -346,16 +346,12 @@ public class ImportXmi {
    * @return String
    */
   private String formatName(org.w3c.dom.Node node){
-    String nodeAttributeValue = getValueFromNode(node);
-    String[] partsOfNodeAttributeValue = nodeAttributeValue.split(" ");
-
+    String[] partsOfNodeAttributeValue  = getValueFromNode(node).split(" ");
     StringBuffer newString = new StringBuffer().append("ib:");
-
     for(String partOfNodeAttributeValue : partsOfNodeAttributeValue){
       partOfNodeAttributeValue = toCamelCase(stripNonCharacters(partOfNodeAttributeValue));
       newString.append(partOfNodeAttributeValue);
     }
-
     return newString.toString();
   }
 
