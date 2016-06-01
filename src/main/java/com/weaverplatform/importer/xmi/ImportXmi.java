@@ -2,20 +2,14 @@ package com.weaverplatform.importer.xmi;
 
 import com.jcabi.xml.XML;
 import com.jcabi.xml.XMLDocument;
-import com.weaverplatform.sdk.Entity;
-import com.weaverplatform.sdk.EntityType;
-import com.weaverplatform.sdk.RelationKeys;
-import com.weaverplatform.sdk.Weaver;
+import com.weaverplatform.sdk.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Map;
 
 /**
  * Created by Jonathan Smit, Sysunite 2016
@@ -32,12 +26,12 @@ public class ImportXmi {
    * @param weaverUrl connection string to Weaver
    * @param filePath specify as filename i.e. "filePath.xml" or unixpath i.e. "/usr/lib/input.xml"
    */
-  public ImportXmi(String weaverUrl, String filePath) throws RuntimeException{
-    if(notNull(weaverUrl) && notNull(filePath)){
+  public ImportXmi(String weaverUrl, String filePath) throws RuntimeException {
+    if (notNull(weaverUrl) && notNull(filePath)) {
       weaver = new Weaver();
       weaver.connect(weaverUrl);
       this.filePath = filePath;
-    }else{
+    } else {
       throw new RuntimeException("one or more constructor arguments are null");
     }
   }
@@ -48,7 +42,7 @@ public class ImportXmi {
    * args[0] = weaver connection uri i.e. http://weaver:port
    * args[1] = filePath (see also: constructor @param filePath)
    */
-  public static void main(String[] args){
+  public static void main(String[] args) {
     ImportXmi importXmi = new ImportXmi(args[0], args[1]);
     importXmi.run();
   }
@@ -56,31 +50,28 @@ public class ImportXmi {
   /**
    * The start method with custom operations on this class
    */
-  public void run(){
+  public void run() {
     //read the xml file and get a formatted Jcabi XML document.
     XML xmldocument = getFormatedXML();
-
     //because we have formatted Jcabi XMLDocument, we can have special xpaths to the nodes we want
     String xpathToXmiClasses = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
     String xpathToXmiAssociations = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Association";
-
     //map the xmi classes to a hashmap
     //let jcabi fetch the xmi class nodes by the right xpath
     HashMap<String, String> xmiClasses = mapXmiClasses(xmldocument.nodes(xpathToXmiClasses));
-
     //map the xmiClasses to weaver as weaver individuals
-    mapXmiClassesToWeaverIndividuals(xmiClasses);
+    createWeaverIndividuals(xmiClasses);
 
-    //map them as annotations to weaver and link them to the xmiClasses
-    //let jcabi fetch the associations by the right xpath
-    mapXmiAssociationsToWeaverAnnotations(xmldocument.nodes(xpathToXmiAssociations), xmiClasses);
+    List<XML> validAssociations = getAssociationsWithAttribute(xmldocument.nodes(xpathToXmiAssociations), "name");
+
+    createWeaverAnnotations(validAssociations, xmiClasses);
   }
 
   /**
    * return the original file contents as jcabi XML document
    * @return XMLDocument
    */
-  public XML getXML(){
+  public XML getXML() {
     return new XMLDocument(toString(read()));
   }
 
@@ -88,7 +79,7 @@ public class ImportXmi {
    * returns the formatted file contents as jcabi XML document
    * @return XMLDocument
    */
-  public XML getFormatedXML(){
+  public XML getFormatedXML() {
     return new XMLDocument(toFormattedString(read()));
   }
 
@@ -97,10 +88,10 @@ public class ImportXmi {
    * the inputstream content string is returned as string
    * @return String
    */
-  public String toString(InputStream contents){
+  public String toString(InputStream contents) {
     try {
       return IOUtils.toString(contents);
-    }catch(IOException e) {
+    } catch(IOException e) {
       System.out.println("IOUtils.toString() fail");
     }
     return null;
@@ -111,7 +102,7 @@ public class ImportXmi {
    * The inputstream content string is replaced by a regex and then returned as string
    * @return
    */
-  public String toFormattedString(InputStream contents){
+  public String toFormattedString(InputStream contents) {
     //replace ':' to ignore xml namespace errors while reading with xpath
     return toString(contents).replaceAll("UML:", "UML.");
   }
@@ -121,32 +112,7 @@ public class ImportXmi {
    * @param xmiAssocations: list xmi nodes of type association
    * @param xmiClasses: hashmap with xmi-classes
    */
-  public void mapXmiAssociationsToWeaverAnnotations(List<XML> xmiAssocations, HashMap<String, String> xmiClasses){
-    for(XML association : xmiAssocations){
-
-      //there are associations without attribute name
-      //we make sure the attribute name is available
-      if(notNull(getAttributeAsNode(association, "name"))){
-
-        //we need the name of the association later, so we save it locally
-        String associationName = getValueFromNode(getAttributeAsNode(association, "name"));
-
-        //we go inside the association-tree looking for a specific one
-        mapSpecificXmiAssociationToWeaverAnnotation(associationName, association, xmiClasses);
-
-      }
-    }
-  }
-
-  /**
-   * map a specific association to weaver (as annotation) when its taggedValue equals Source.
-   * @param associationName : label name for future annotation attribute label
-   * @param currentAssociation : an XML document
-   * @param xmiClasses : HashMap which contains the xmi Class id
-   *                   which is the parent of this annotation used for weaver
-   */
-  public void mapSpecificXmiAssociationToWeaverAnnotation(String associationName, XML currentAssociation, HashMap<String, String> xmiClasses){
-
+  public void createWeaverAnnotations(List<XML> associations, HashMap<String, String> xmiClasses) {
     /** currentAssociation node
      *
      * <association>
@@ -160,47 +126,53 @@ public class ImportXmi {
      * </association>
      *
      */
+    for (XML association : associations) {
+      String xmiName = xmiClasses.get(getValidSubNodeValue(association));
+      //create weaver annotation
+      HashMap<String, Object> attributes = new HashMap<>();
+      attributes.put("label", getValueFromNode(getAttributeAsNode(association, "name")));
+      attributes.put("celltype", "individual");
+      toWeaverAnnotation(attributes, xmiName);
+    }
+  }
 
-    String xpathToAssociationEndNodes = "//UML.Association.connection/UML.AssociationEnd";
-    String xpathToTaggedValueNodes = "//UML.ModelElement.taggedValue/UML.TaggedValue";
-
-    List<XML> associationEndNodes = currentAssociation.nodes(xpathToAssociationEndNodes);
-
-    for(XML associationEndNode: associationEndNodes){
-
-      List<XML> taggedValueNodes = associationEndNode.nodes(xpathToTaggedValueNodes);
-
-      //we have multiple taggedValueNodes, so we need to loop trough them
-      for(XML taggedValueNode : taggedValueNodes){
-
-        String taggedAttribute = getValueFromNode(getAttributeAsNode(taggedValueNode, "value"));
-
-        if(taggedAttribute.equals("source")){
-
-          //the associationEndNode type attribute is the xmi-id.
-          //we have the xmi-id as key stored in the xmiClasses hashmap.
-          //now we want the corresponding xmiClassName
-          //we fetch the name from the hashmap by the assocationEndNode type attribute as key
-          String xmiName = xmiClasses.get(getValueFromNode(getAttributeAsNode(associationEndNode, "type")));
-
-          //create weaver annotation
-          HashMap<String, Object> attributes = new HashMap<>();
-          attributes.put("label", associationName);
-          attributes.put("celltype", "individual");
-          toWeaverAnnotation(attributes, xmiName);
-
+  /**
+   * Returns the attribute type value of first subnode when a subnode of association matches with "source"
+   * @param association
+   * @return
+   */
+  private String getValidSubNodeValue(XML association) {
+    for(XML associationEndNode : association.nodes("//UML.Association.connection/UML.AssociationEnd")) {
+      for (XML associationTaggedValueNode : associationEndNode.nodes("//UML.ModelElement.taggedValue/UML.TaggedValue")) {
+        if (getValueFromNode(getAttributeAsNode(associationTaggedValueNode, "value")).equals("source")) {
+          return getValueFromNode(getAttributeAsNode(associationEndNode, "type"));
         }
       }
-
     }
+    return null;
+  }
 
+  /**
+   * Returns a list with XML Association Nodes which have a specific attribute
+   * @param associations
+   * @param attributeName
+   * @return
+   */
+  public List<XML> getAssociationsWithAttribute(List<XML> associations, String attributeName) {
+    List<XML> filteredAssociations = new ArrayList<>();
+    for (XML association : associations) {
+      if (notNull(getAttributeAsNode(association, attributeName))) {
+        filteredAssociations.add(association);
+      }
+    }
+    return filteredAssociations;
   }
 
   /**
    * save the name of an xmi-class as weaver individual
    * @param xmiClasses
    */
-  public void mapXmiClassesToWeaverIndividuals(HashMap<String, String> xmiClasses){
+  public void createWeaverIndividuals(HashMap<String, String> xmiClasses) {
     Iterator it = xmiClasses.entrySet().iterator();
     while (it.hasNext()) {
       Map.Entry pair = (Map.Entry)it.next();
@@ -210,19 +182,16 @@ public class ImportXmi {
     }
   }
 
-
   /**
    * Creates one hashmap from all xmi Classes
    * @param xmiClasses: xmi nodes list
    * @return HashMap<xmi-name, xmi-id> from every xmi Class
    */
-  public HashMap<String, String> mapXmiClasses(List<XML> xmiClasses){
+  public HashMap<String, String> mapXmiClasses(List<XML> xmiClasses) {
     HashMap<String, String> map = new HashMap<String, String>();
     for (XML xmiClass : xmiClasses) {
-
       String name = formatName(getAttributeAsNode(xmiClass, "name"));
       String xmiID = getValueFromNode(getAttributeAsNode(xmiClass, "xmi.id"));
-
       map.put(xmiID, name);
     }
     return map;
@@ -233,8 +202,8 @@ public class ImportXmi {
    * @param node: org.w3c.dom.Node
    * @return true if not null, false if otherwise
    */
-  private boolean notNull(org.w3c.dom.Node node){
-    if(node != null){
+  private boolean notNull(org.w3c.dom.Node node) {
+    if (node != null) {
       return true;
     }
     return false;
@@ -245,7 +214,7 @@ public class ImportXmi {
    * @param value: String
    * @return true if not null, false if otherwise
    */
-  private boolean notNull(String value){
+  private boolean notNull(String value) {
     if(value != null){
       return true;
     }
@@ -256,8 +225,8 @@ public class ImportXmi {
    * Reads an xmi filePath from a classpath (test resource directory) or unixpath
    * @return InputStream on succes or null on failure
    */
-  public InputStream read(){
-    if(!hasPath(filePath)) {
+  public InputStream read() {
+    if (!hasPath(filePath)) {
       return createInputStream(readFromTestClassResourceDirectory(filePath));
     }
     return createInputStream(readFromUnixPath(filePath));
@@ -268,14 +237,14 @@ public class ImportXmi {
    * @param path i.e. "/dir/user/file.xml"
    * @return byte[] result
    */
-  private byte[] readFromUnixPath(String path){
+  private byte[] readFromUnixPath(String path) {
     try {
       File f = new File(filePath);
       boolean isFile = f.exists();
-      if(isFile){
+      if (isFile) {
         return Files.readAllBytes(Paths.get(f.getAbsolutePath()));
       }
-    }catch(IOException e) {
+    } catch (IOException e) {
       System.out.println("FileUtils.readAllBytes fail");
     }
     return null;
@@ -286,7 +255,7 @@ public class ImportXmi {
    * @param path: i.e. "file.xml"
    * @return byte[] result
    */
-  private byte[] readFromTestClassResourceDirectory(String path){
+  private byte[] readFromTestClassResourceDirectory(String path) {
     try {
       return FileUtils.readFileToByteArray(new File(getClass().getClassLoader().getResource(filePath).getFile()));
     }catch(IOException e) {
@@ -300,10 +269,10 @@ public class ImportXmi {
    * @param contents
    * @return InputStream on succes, null on failure
    */
-  private InputStream createInputStream(byte[] contents){
+  private InputStream createInputStream(byte[] contents) {
     try {
       return new ByteArrayInputStream(IOUtils.toByteArray(new ByteArrayInputStream(contents)));
-    }catch(IOException e){
+    }catch(IOException e) {
       System.out.println("IOUtils.toByteArray() fail");
     }
     return null;
@@ -314,8 +283,8 @@ public class ImportXmi {
    * @param fileName
    * @return
    */
-  private boolean hasPath(String fileName){
-    if(fileName.matches("(.*)/(.*)")){
+  private boolean hasPath(String fileName) {
+    if (fileName.matches("(.*)/(.*)")) {
       //seems the be an unix path
       return true;
     }
@@ -328,7 +297,7 @@ public class ImportXmi {
    * @param attributeName
    * @return
    */
-  private org.w3c.dom.Node getAttributeAsNode(XML doc, String attributeName){
+  private org.w3c.dom.Node getAttributeAsNode(XML doc, String attributeName) {
     return doc.node().getAttributes().getNamedItem(attributeName);
   }
 
@@ -346,10 +315,10 @@ public class ImportXmi {
    * @param node
    * @return String
    */
-  private String formatName(org.w3c.dom.Node node){
+  private String formatName(org.w3c.dom.Node node) {
     String[] partsOfNodeAttributeValue  = getValueFromNode(node).split(" ");
     StringBuffer newString = new StringBuffer().append("ib:");
-    for(String partOfNodeAttributeValue : partsOfNodeAttributeValue){
+    for (String partOfNodeAttributeValue : partsOfNodeAttributeValue) {
       partOfNodeAttributeValue = toCamelCase(stripNonCharacters(partOfNodeAttributeValue));
       newString.append(partOfNodeAttributeValue);
     }
@@ -361,7 +330,7 @@ public class ImportXmi {
    * @param str input
    * @return String formatted
    */
-  private String stripNonCharacters(String str){
+  private String stripNonCharacters(String str) {
     StringBuilder result = new StringBuilder();
     for(int i=0; i<str.length(); i++) {
       char tmpChar = str.charAt(i);
@@ -377,7 +346,7 @@ public class ImportXmi {
    * @param str: String
    * @return String result
    */
-  private String toCamelCase(String str){
+  private String toCamelCase(String str) {
     str = str.toLowerCase();
     String firstCharAsCapital = str.substring(0, 1).toUpperCase();
     String charactersWithoutFirstChar = str.substring(1, str.length());
@@ -390,7 +359,7 @@ public class ImportXmi {
    * @param id: weaver entity id
    * @return Weaver Entity on succes or null on failure
    */
-  public Entity toWeaverIndividual(HashMap<String, Object> attributes, String id){
+  public Entity toWeaverIndividual(HashMap<String, Object> attributes, String id) {
     HashMap<String, Object> defaultAttributes = new HashMap<>();
     defaultAttributes.put("name", "Unnamed");
     try {
@@ -407,7 +376,7 @@ public class ImportXmi {
 
       return parent;
 
-    }catch(NullPointerException e){
+    } catch (NullPointerException e) {
       System.out.println("weaver connection error/node not found.");
     }
     return null;
@@ -419,21 +388,23 @@ public class ImportXmi {
    * @param id
    * @return Weaver Entity on succes or null on failure
    */
-  public Entity toWeaverAnnotation(HashMap<String, Object> attributes, String id){
+  public Entity toWeaverAnnotation(HashMap<String, Object> attributes, String id) {
     try {
       //retrieve parent
       Entity parent = weaver.get(id);
 
       //retrieve annotions collection
-      Entity aAnnotations = parent.getRelations().get(RelationKeys.ANNOTATIONS);
+      ShallowEntity shallowAnnotations = parent.getRelations().get(RelationKeys.ANNOTATIONS);
 
       //create first annotation
       Entity annotation = weaver.add(attributes == null ? new HashMap<String, Object>() : attributes, EntityType.ANNOTATION, weaver.createRandomUUID());
+
+      Entity aAnnotations = weaver.get(shallowAnnotations.getId());
       aAnnotations.linkEntity(annotation.getId(), annotation);
 
       return annotation;
 
-    }catch(NullPointerException e){
+    } catch (NullPointerException e) {
       System.out.println("weaver connection error/node not found.");
     }
     return null;
