@@ -212,7 +212,7 @@ public class ImportXmi {
    * @return true if not null, false if otherwise
    */
   private boolean notNull(String value) {
-    if(value != null){
+    if (value != null) {
       return true;
     }
     return false;
@@ -255,7 +255,7 @@ public class ImportXmi {
   private byte[] readFromTestClassResourceDirectory(String path) {
     try {
       return FileUtils.readFileToByteArray(new File(getClass().getClassLoader().getResource(filePath).getFile()));
-    }catch(IOException e) {
+    } catch(IOException e) {
       System.out.println("FileUtils.readFileToByteArray fail");
     }
     return null;
@@ -269,7 +269,7 @@ public class ImportXmi {
   private InputStream createInputStream(byte[] contents) {
     try {
       return new ByteArrayInputStream(IOUtils.toByteArray(new ByteArrayInputStream(contents)));
-    }catch(IOException e) {
+    } catch(IOException e) {
       System.out.println("IOUtils.toByteArray() fail");
     }
     return null;
@@ -329,9 +329,9 @@ public class ImportXmi {
    */
   private String stripNonCharacters(String str) {
     StringBuilder result = new StringBuilder();
-    for(int i=0; i<str.length(); i++) {
+    for (int i=0; i<str.length(); i++) {
       char tmpChar = str.charAt(i);
-      if(Character.isLetter(tmpChar)){
+      if (Character.isLetter(tmpChar)) {
         result.append(tmpChar);
       }
     }
