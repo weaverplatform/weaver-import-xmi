@@ -50,18 +50,14 @@ public class ImportXmi {
    * args[1] = filePath (see also: constructor @param filePath)
    */
   public static void main(String[] args){
-
     ImportXmi importXmi = new ImportXmi(args[0], args[1]);
-
     importXmi.run();
-
   }
 
   /**
    * The start method with custom operations on this class
    */
   public void run(){
-
     //read the xml file and get a formatted Jcabi XML document.
     XML xmldocument = getFormatedXML();
 
@@ -79,7 +75,6 @@ public class ImportXmi {
     //map them as annotations to weaver and link them to the xmiClasses
     //let jcabi fetch the associations by the right xpath
     mapXmiAssociationsToWeaverAnnotations(xmldocument.nodes(xpathToXmiAssociations), xmiClasses);
-
   }
 
   /**
@@ -105,15 +100,10 @@ public class ImportXmi {
    */
   public String getFileContents(InputStream contents){
     try {
-
-      String xmiContent = IOUtils.toString(contents);
-
-      return xmiContent;
-
+      return IOUtils.toString(contents);
     }catch(IOException e) {
       System.out.println("IOUtils.toString() fail");
     }
-
     return null;
   }
 
@@ -122,13 +112,8 @@ public class ImportXmi {
    * @return
    */
   public String getFormatedFileContents(InputStream contents){
-
-    String filecontent = getFileContents(contents);
-
     //replace ':' to ignore xml namespace errors while reading with xpath
-    filecontent = filecontent.replaceAll("UML:", "UML.");
-
-    return filecontent;
+    return getFileContents(contents).replaceAll("UML:", "UML.");
   }
 
   /**
@@ -216,15 +201,13 @@ public class ImportXmi {
    * @param xmiClasses
    */
   public void mapXmiClassesToWeaverIndividuals(HashMap<String, String> xmiClasses){
-      Iterator it = xmiClasses.entrySet().iterator();
-      while (it.hasNext()) {
-        Map.Entry pair = (Map.Entry)it.next();
-        //System.out.println(pair.getKey() + " = " + pair.getValue());
-        String xmiClassName = (String)pair.getValue();
-        //save to weaver as Individual
-        toWeaverIndividual(null, xmiClassName);
-        //it.remove(); // avoids a ConcurrentModificationException
-      }
+    Iterator it = xmiClasses.entrySet().iterator();
+    while (it.hasNext()) {
+      Map.Entry pair = (Map.Entry)it.next();
+      String xmiClassName = (String)pair.getValue();
+      //save to weaver as Individual
+      toWeaverIndividual(null, xmiClassName);
+    }
   }
 
 
@@ -234,9 +217,7 @@ public class ImportXmi {
    * @return HashMap<xmi-name, xmi-id> from every xmi Class
    */
   public HashMap<String, String> mapXmiClasses(List<XML> xmiClasses){
-
     HashMap<String, String> map = new HashMap<String, String>();
-
     for (XML xmiClass : xmiClasses) {
 
       String name = formatName(getAttributeAsNode(xmiClass, "name"));
@@ -244,7 +225,6 @@ public class ImportXmi {
 
       map.put(xmiID, name);
     }
-
     return map;
   }
 
@@ -253,7 +233,7 @@ public class ImportXmi {
    * @param node: org.w3c.dom.Node
    * @return true if not null, false if otherwise
    */
-  public boolean notNull(org.w3c.dom.Node node){
+  private boolean notNull(org.w3c.dom.Node node){
     if(node != null){
       return true;
     }
@@ -265,7 +245,7 @@ public class ImportXmi {
    * @param value: String
    * @return true if not null, false if otherwise
    */
-  public boolean notNull(String value){
+  private boolean notNull(String value){
     if(value != null){
       return true;
     }
@@ -277,43 +257,64 @@ public class ImportXmi {
    * @return InputStream on succes or null on failure
    */
   public InputStream read(){
-
-    try{
-
-      if(!hasPath(filePath)) {
-
-        //read from class path test resource directory
-        byte[] contents = FileUtils.readFileToByteArray(new File(getClass().getClassLoader().getResource(filePath).getFile()));
-        InputStream in = new ByteArrayInputStream(contents);
-        InputStream cont = new ByteArrayInputStream(IOUtils.toByteArray(in));
-        return cont;
-
-      }
-
-      File f = new File(filePath);
-
-      boolean isFile = f.exists();
-
-      if(isFile){
-
-        //read from unix path
-        Path path = Paths.get(f.getAbsolutePath());
-        byte[] data = Files.readAllBytes(path);
-
-        InputStream in = new ByteArrayInputStream(data);
-        InputStream cont = new ByteArrayInputStream(IOUtils.toByteArray(in));
-        return cont;
-      }
-
-    }catch(Exception e) {
-      System.out.println("cannot read!");
+    if(!hasPath(filePath)) {
+      return createInputStreamFromByteArray(readFromTestClassResourceDirectory(filePath));
     }
-
-    return null;
-
+    return createInputStreamFromByteArray(readFromUnixPath(filePath));
   }
 
-  public boolean hasPath(String fileName){
+  /**
+   * reads a file from a unix path, returns the contents as byte array
+   * @param path i.e. "/dir/user/file.xml"
+   * @return byte[] result
+   */
+  private byte[] readFromUnixPath(String path){
+    try {
+      File f = new File(filePath);
+      boolean isFile = f.exists();
+      if(isFile){
+        return Files.readAllBytes(Paths.get(f.getAbsolutePath()));
+      }
+    }catch(IOException e) {
+      System.out.println("FileUtils.readAllBytes fail");
+    }
+    return null;
+  }
+
+  /**
+   * reads a file from a class path test resource directory, returns the contents as byte array
+   * @param path: i.e. "file.xml"
+   * @return byte[] result
+   */
+  private byte[] readFromTestClassResourceDirectory(String path){
+    try {
+      return FileUtils.readFileToByteArray(new File(getClass().getClassLoader().getResource(filePath).getFile()));
+    }catch(IOException e) {
+      System.out.println("FileUtils.readFileToByteArray fail");
+    }
+    return null;
+  }
+
+  /**
+   * Creates an inputstream object from a byte array
+   * @param contents
+   * @return InputStream on succes, null on failure
+   */
+  private InputStream createInputStreamFromByteArray(byte[] contents){
+    try {
+      return new ByteArrayInputStream(IOUtils.toByteArray(new ByteArrayInputStream(contents)));
+    }catch(IOException e){
+      System.out.println("IOUtils.toByteArray() fail");
+    }
+    return null;
+  }
+
+  /**
+   * checks if the file has a forward slash
+   * @param fileName
+   * @return
+   */
+  private boolean hasPath(String fileName){
     if(fileName.matches("(.*)/(.*)")){
       //seems the be an unix path
       return true;
@@ -327,7 +328,7 @@ public class ImportXmi {
    * @param attributeName
    * @return
    */
-  public org.w3c.dom.Node getAttributeAsNode(XML doc, String attributeName){
+  private org.w3c.dom.Node getAttributeAsNode(XML doc, String attributeName){
     return doc.node().getAttributes().getNamedItem(attributeName);
   }
 
@@ -336,7 +337,7 @@ public class ImportXmi {
    * @param node
    * @return String value
    */
-  public String getValueFromNode(org.w3c.dom.Node node){
+  private String getValueFromNode(org.w3c.dom.Node node){
     return node.getTextContent();
   }
 
@@ -345,21 +346,18 @@ public class ImportXmi {
    * @param node
    * @return String
    */
-  public String formatName(org.w3c.dom.Node node){
-    String textvalue = getValueFromNode(node);
+  private String formatName(org.w3c.dom.Node node){
+    String nodeAttributeValue = getValueFromNode(node);
+    String[] partsOfNodeAttributeValue = nodeAttributeValue.split(" ");
 
-    String[] split = textvalue.split(" ");
+    StringBuffer newString = new StringBuffer().append("ib:");
 
-    StringBuffer stringBuffer = new StringBuffer();
-    stringBuffer.append("ib:");
-
-    for(String name : split){
-      name = stripNonCharacters(name);
-      name = toCamelCase(name);
-      stringBuffer.append(name);
+    for(String partOfNodeAttributeValue : partsOfNodeAttributeValue){
+      partOfNodeAttributeValue = toCamelCase(stripNonCharacters(partOfNodeAttributeValue));
+      newString.append(partOfNodeAttributeValue);
     }
 
-    return stringBuffer.toString();
+    return newString.toString();
   }
 
   /**
@@ -367,8 +365,7 @@ public class ImportXmi {
    * @param str input
    * @return String formatted
    */
-  public String stripNonCharacters(String str){
-
+  private String stripNonCharacters(String str){
     StringBuilder result = new StringBuilder();
     for(int i=0; i<str.length(); i++) {
       char tmpChar = str.charAt(i);
@@ -376,27 +373,19 @@ public class ImportXmi {
         result.append(tmpChar);
       }
     }
-
     return result.toString();
-
   }
 
   /**
-   * Uppercase the first Character of a String, changes all others character to lowercase.
-   * @param str
-   * @return new String
+   * Transform the first char of the string to capital, and all other characters to small.
+   * @param str: String
+   * @return String result
    */
-  public String toCamelCase(String str){
+  private String toCamelCase(String str){
     str = str.toLowerCase();
-
-    String firstChar = str.substring(0, 1);
-    firstChar = firstChar.toUpperCase();
-
-    String rest = str.substring(1, str.length());
-
-    String newName = firstChar + rest;
-
-    return newName;
+    String firstCharAsCapital = str.substring(0, 1).toUpperCase();
+    String charactersWithoutFirstChar = str.substring(1, str.length());
+    return (firstCharAsCapital + charactersWithoutFirstChar);
   }
 
   /**
@@ -406,12 +395,9 @@ public class ImportXmi {
    * @return Weaver Entity on succes or null on failure
    */
   public Entity toWeaverIndividual(HashMap<String, Object> attributes, String id){
-
     HashMap<String, Object> defaultAttributes = new HashMap<>();
     defaultAttributes.put("name", "Unnamed");
-
     try {
-
       //create object
       Entity parent = weaver.add(attributes == null ? defaultAttributes : attributes, EntityType.INDIVIDUAL, id);
 
@@ -428,7 +414,6 @@ public class ImportXmi {
     }catch(NullPointerException e){
       System.out.println("weaver connection error/node not found.");
     }
-
     return null;
   }
 
@@ -439,7 +424,6 @@ public class ImportXmi {
    * @return Weaver Entity on succes or null on failure
    */
   public Entity toWeaverAnnotation(HashMap<String, Object> attributes, String id){
-
     try {
       //retrieve parent
       Entity parent = weaver.get(id);
@@ -456,7 +440,6 @@ public class ImportXmi {
     }catch(NullPointerException e){
       System.out.println("weaver connection error/node not found.");
     }
-
     return null;
   }
 
