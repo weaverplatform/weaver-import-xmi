@@ -77,7 +77,7 @@ public class ImportXmi {
   }
 
   /**
-   * return the file contents as jcabi XML document
+   * return the original file contents as jcabi XML document
    * @return XMLDocument
    */
   public XML getXML(){
@@ -85,8 +85,7 @@ public class ImportXmi {
   }
 
   /**
-   * returns the file contents as jcabi XML document in a formatted way.
-   * the jcabi XML Document has constructor argument getFormattedFileContents().
+   * returns the formatted file contents as jcabi XML document
    * @return XMLDocument
    */
   public XML getFormatedXML(){
@@ -94,7 +93,8 @@ public class ImportXmi {
   }
 
   /**
-   * returns the file contents - an InputStream- as String
+   * wrapper method for IOUtils.toString
+   * the inputstream content string is returned as string
    * @return String
    */
   public String toString(InputStream contents){
@@ -107,7 +107,8 @@ public class ImportXmi {
   }
 
   /**
-   * Returns the file contents as String (modified original)
+   * Decorator method for toString(inputstream)
+   * The inputstream content string is replaced by a regex and then returned as string
    * @return
    */
   public String toFormattedString(InputStream contents){
