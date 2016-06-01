@@ -109,23 +109,10 @@ public class ImportXmi {
 
   /**
    * Loop trough xmi-associations and map them to weaver as annotations
-   * @param xmiAssocations: list xmi nodes of type association
+   * @param associations: list xmi nodes of type association
    * @param xmiClasses: hashmap with xmi-classes
    */
   public void createWeaverAnnotations(List<XML> associations, HashMap<String, String> xmiClasses) {
-    /** currentAssociation node
-     *
-     * <association>
-     *     <connection>
-     *         <end type=xmiId>
-     *            <taggedValues>
-     *                <taggedValue value=source></taggedValue>
-     *            </taggedValues>
-     *         </end>
-     *     </connection>
-     * </association>
-     *
-     */
     for (XML association : associations) {
       String xmiName = xmiClasses.get(getValidSubNodeValue(association));
       //create weaver annotation
@@ -142,6 +129,19 @@ public class ImportXmi {
    * @return
    */
   private String getValidSubNodeValue(XML association) {
+    /** currentAssociation node
+     *
+     * <association>
+     *     <connection>
+     *         <end type=xmiId>
+     *            <taggedValues>
+     *                <taggedValue value=source></taggedValue>
+     *            </taggedValues>
+     *         </end>
+     *     </connection>
+     * </association>
+     *
+     */
     for(XML associationEndNode : association.nodes("//UML.Association.connection/UML.AssociationEnd")) {
       for (XML associationTaggedValueNode : associationEndNode.nodes("//UML.ModelElement.taggedValue/UML.TaggedValue")) {
         if (getValueFromNode(getAttributeAsNode(associationTaggedValueNode, "value")).equals("source")) {
