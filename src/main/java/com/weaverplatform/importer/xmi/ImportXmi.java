@@ -19,6 +19,7 @@ import java.nio.file.Paths;
 public class ImportXmi {
 
   private Weaver weaver;
+  private Entity dataset;
   private String filePath;
 
   /**
@@ -26,10 +27,17 @@ public class ImportXmi {
    * @param weaverUrl connection string to Weaver
    * @param filePath specify as filename i.e. "filePath.xml" or unixpath i.e. "/usr/lib/input.xml"
    */
-  public ImportXmi(String weaverUrl, String filePath) throws RuntimeException {
+  public ImportXmi(String weaverUrl, String filePath, String datasetId) throws RuntimeException {
     if (notNull(weaverUrl) && notNull(filePath)) {
       weaver = new Weaver();
       weaver.connect(weaverUrl);
+
+      dataset = weaver.add(new HashMap<String, Object>(), "$DATASET", datasetId);
+
+      //create objects collection
+      Entity objects = weaver.add(new HashMap<String, Object>(), EntityType.COLLECTION, weaver.createRandomUUID());
+      dataset.linkEntity("objects", objects);
+
       this.filePath = filePath;
     } else {
       throw new RuntimeException("one or more constructor arguments are null");
@@ -43,7 +51,7 @@ public class ImportXmi {
    * args[1] = filePath (see also: constructor @param filePath)
    */
   public static void main(String[] args) {
-    ImportXmi importXmi = new ImportXmi(args[0], args[1]);
+    ImportXmi importXmi = new ImportXmi(args[0], args[1], args[2]);
     importXmi.run();
   }
 
@@ -314,7 +322,7 @@ public class ImportXmi {
    */
   private String formatName(org.w3c.dom.Node node) {
     String[] partsOfNodeAttributeValue  = getValueFromNode(node).split(" ");
-    StringBuffer newString = new StringBuffer().append("ib:");
+    StringBuffer newString = new StringBuffer();
     for (String partOfNodeAttributeValue : partsOfNodeAttributeValue) {
       partOfNodeAttributeValue = toCamelCase(stripNonCharacters(partOfNodeAttributeValue));
       newString.append(partOfNodeAttributeValue);
@@ -353,19 +361,29 @@ public class ImportXmi {
   /**
    * Creates an Weaver Individual
    * @param attributes: weaver entity attributes
-   * @param id: weaver entity id
+   * @param individualId: weaver entity id
    * @return Weaver Entity on succes or null on failure
    */
-  public Entity toWeaverIndividual(HashMap<String, Object> attributes, String id) {
+  public Entity toWeaverIndividual(HashMap<String, Object> attributes, String individualId) {
     HashMap<String, Object> defaultAttributes = new HashMap<>();
-    defaultAttributes.put("name", "Unnamed");
+    defaultAttributes.put("name", individualId);
     try {
       //create object
-      Entity parent = weaver.add(attributes == null ? defaultAttributes : attributes, EntityType.INDIVIDUAL, id);
+      Entity parent = weaver.add(attributes == null ? defaultAttributes : attributes, EntityType.INDIVIDUAL, individualId);
+
+      String objectsId = dataset.getRelations().get("objects").getId();
+      Entity objects   = weaver.get(objectsId);
+      objects.linkEntity(parent.getId(), parent);
 
       //create first annotation collection
       Entity aAnnotions = weaver.add(new HashMap<String, Object>(), EntityType.COLLECTION, weaver.createRandomUUID());
       parent.linkEntity(RelationKeys.ANNOTATIONS, aAnnotions);
+
+      //make one annotation for every individual
+      HashMap<String, Object> annotationAttributes = new HashMap<>();
+      annotationAttributes.put("label", individualId);
+      annotationAttributes.put("celltype", "individual");
+      toWeaverAnnotation(annotationAttributes, individualId);
 
       //create collection properties
       Entity aCollection = weaver.add(new HashMap<String, Object>(), EntityType.COLLECTION, weaver.createRandomUUID());
