@@ -32,11 +32,11 @@ public class ImportXmi {
       weaver = new Weaver();
       weaver.connect(weaverUrl);
 
-      dataset = weaver.add(new HashMap<String, Object>(), "$DATASET", datasetId);
+      dataset = weaver.add(new HashMap<String, Object>(), EntityType.DATASET, datasetId);
 
       //create objects collection
       Entity objects = weaver.add(new HashMap<String, Object>(), EntityType.COLLECTION, weaver.createRandomUUID());
-      dataset.linkEntity("objects", objects);
+      dataset.linkEntity(RelationKeys.OBJECTS, objects);
 
       this.filePath = filePath;
     } else {
