@@ -371,7 +371,7 @@ public class ImportXmi {
       //create object
       Entity parent = weaver.add(attributes == null ? defaultAttributes : attributes, EntityType.INDIVIDUAL, individualId);
 
-      String objectsId = dataset.getRelations().get("objects").getId();
+      String objectsId = dataset.getRelations().get(RelationKeys.OBJECTS).getId();
       Entity objects   = weaver.get(objectsId);
       objects.linkEntity(parent.getId(), parent);
 
