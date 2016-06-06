@@ -1,14 +1,8 @@
 package com.weaverplatform.importer.xmi;
 
-import com.jcabi.xml.XML;
-import com.sun.tools.internal.ws.wsdl.document.Import;
-import org.junit.Before;
 import org.junit.Test;
 
-import java.io.InputStream;
-import java.util.HashMap;
-
-import static org.junit.Assert.*;
+import java.io.IOException;
 
 /**
  * Created by Jonathan Smit, Sysunite 2016
@@ -20,23 +14,19 @@ public class ImportXmiTest {
   private String argument2 = "testDataset";
 
   @Test
-  public void ImportXmiConstructorTest() {
-    boolean result = false;
-    try {
-      ImportXmi importXmi = new ImportXmi(argument0, argument1, argument2);
-      result = true;
-    } catch (RuntimeException e) {
-      System.out.println(e.getMessage());
-    }
-
-    assertTrue(result);
+  public void ImportXmiConstructorTest() throws IOException {
+    ImportXmi importXmi = new ImportXmi(argument0, argument1);
+    importXmi.readFromFile(argument2);
+    importXmi.run();
   }
 
   @Test
-  public void createWeaverDatasetTest(){
-    ImportXmi importXmi = new ImportXmi(argument0, argument1, argument2);
-    assertTrue(importXmi.createWeaverDataset());
+  public void createWeaverDatasetTest() throws IOException {
+    ImportXmi importXmi = new ImportXmi(argument0, argument1);
+    importXmi.readFromFile(argument2);
+    importXmi.createWeaverDataset();
   }
+
 
 //  @Test
 //  public void mapXmiAssociationsToWeaverAnnotationsTest() {

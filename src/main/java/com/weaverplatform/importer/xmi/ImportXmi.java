@@ -14,128 +14,82 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 /**
- * Created by Jonathan Smit, Sysunite 2016
- *
  * This program is written to import xmi-data and map parts of it to Weaver objects by the weaver-sdk-java.
  */
 public class ImportXmi {
 
+  public static final String XPATH_TO_XMI_CLASSES      = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
+  public static final String XPATH_TO_XMI_ASSOCIATIONS = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Association";
+  
   private Weaver weaver;
+  private String weaverUrl;
   private String datasetId;
   private Entity dataset;
-  private String filePath;
+  private InputStream inputStream;
 
   /**
    * Constructor
    * @param weaverUrl connection string to Weaver
-   * @param filePath specify as filename i.e. "filePath.xml" or unixpath i.e. "/usr/lib/input.xml"
    */
-  public ImportXmi(String weaverUrl, String filePath, String datasetId) throws RuntimeException {
-    if (notNull(weaverUrl) && notNull(filePath) && notNull(datasetId)) {
-      weaver = new Weaver();
-      weaver.connect(new WeaverSocket(URI.create(weaverUrl)));
-      this.filePath = filePath;
-      this.datasetId = datasetId;
-    } else {
-      throw new RuntimeException("one or more constructor arguments are null");
-    }
+  public ImportXmi(String weaverUrl, String datasetId) {
+    this.weaverUrl = weaverUrl;
+    this.datasetId = datasetId;
+    
+    weaver = new Weaver();
+    weaver.connect(new WeaverSocket(URI.create(weaverUrl)));
   }
 
-  /**
-   * Run standalone
-   * @param args
-   * args[0] = weaver connection uri i.e. http://weaver:port
-   * args[1] = filePath (see also: constructor @param filePath)
-   * args[2] = name of model of weaver workbench
-   */
-  public static void main(String[] args) {
-    ImportXmi importXmi = new ImportXmi(args[0], args[1], args[2]);
-    importXmi.run();
+  public void readFromFile(String path) throws IOException {
+    this.inputStream = createInputStream(readFromUnixPath(path));
+  }
+
+  public void readFromResources(String path) throws IOException {
+    this.inputStream = createInputStream(readFromTestClassResourceDirectory(path));
   }
 
   /**
    * The start method with custom operations on this class
+   * @throws IOException
    */
-  public void run() {
+  public void run() throws IOException {
     //read the xml file and get a formatted Jcabi XML document.
-    XML xmldocument = getFormatedXML();
+    XML xmldocument = new XMLDocument(toFormattedString(inputStream));
+    
     //because we have formatted Jcabi XMLDocument, we can have special xpaths to the nodes we want
-    String xpathToXmiClasses = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
-    String xpathToXmiAssociations = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Association";
     //map the xmi classes to a hashmap
     //let jcabi fetch the xmi class nodes by the right xpath
-    HashMap<String, String> xmiClasses = mapXmiClasses(xmldocument.nodes(xpathToXmiClasses));
-    System.out.println(xmiClasses.size());
-    createWeaverDataset();
+    HashMap<String, String> xmiClasses = mapXmiClasses(xmldocument.nodes(XPATH_TO_XMI_CLASSES));
+    
     //map the xmiClasses to weaver as weaver individuals
-    //createWeaverIndividuals(xmiClasses);
-    //createWeaverAnnotations(getAssociationsWithAttribute(xmldocument.nodes(xpathToXmiAssociations), "name"), xmiClasses);
+    createWeaverDataset();
+    createWeaverIndividuals(xmiClasses);
+    createWeaverAnnotations(getAssociationsWithAttribute(xmldocument.nodes(XPATH_TO_XMI_ASSOCIATIONS), "name"), xmiClasses);
   }
 
-  public boolean createWeaverDataset(){
-    try{
+  public void createWeaverDataset(){
+    dataset = weaver.add(new HashMap<String, Object>(), EntityType.DATASET, datasetId);
 
-      dataset = weaver.add(new HashMap<String, Object>(), EntityType.DATASET, datasetId);
-
-      //create objects collection
-      Entity objects = weaver.add(new HashMap<String, Object>(), EntityType.COLLECTION, weaver.createRandomUUID());
-      dataset.linkEntity(RelationKeys.OBJECTS, objects);
-
-      System.out.println("createWeaverDataset");
-
-      return true;
-
-    }catch (Exception e){
-      System.out.println("createWeaverDataSetError : " + e.getMessage());
-    }
-
-    return false;
+    //create objects collection
+    Entity objects = weaver.add(new HashMap<String, Object>(), EntityType.COLLECTION, weaver.createRandomUUID());
+    dataset.linkEntity(RelationKeys.OBJECTS, objects);
   }
-
-  /**
-   * return the original file contents as jcabi XML document
-   * @return XMLDocument
-   */
-  public XML getXML() {
-    return new XMLDocument(toString(read()));
-  }
-
-  /**
-   * returns the formatted file contents as jcabi XML document
-   * @return XMLDocument
-   */
-  public XML getFormatedXML() {
-    return new XMLDocument(toFormattedString(read()));
-  }
-
-  /**
-   * wrapper method for IOUtils.toString
-   * the inputstream content string is returned as string
-   * @return String
-   */
-  public String toString(InputStream contents) {
-    try {
-      return IOUtils.toString(contents);
-    } catch(IOException e) {
-      System.out.println("IOUtils.toString() fail");
-    }
-    return null;
-  }
-
+  
   /**
    * Decorator method for toString(inputstream)
    * The inputstream content string is replaced by a regex and then returned as string
+   * @param contents
    * @return
+   * @throws IOException
    */
-  public String toFormattedString(InputStream contents) {
+  public String toFormattedString(InputStream contents) throws IOException {
     //replace ':' to ignore xml namespace errors while reading with xpath
-    return toString(contents).replaceAll("UML:", "UML.");
+    return IOUtils.toString(contents).replaceAll("UML:", "UML.");
   }
 
   /**
    * Loop trough xmi-associations and map them to weaver as annotations
-   * @param associations: list xmi nodes of type association
-   * @param xmiClasses: hashmap with xmi-classes
+   * @param associations
+   * @param xmiClasses
    */
   public void createWeaverAnnotations(List<XML> associations, HashMap<String, String> xmiClasses) {
     for (XML association : associations) {
@@ -186,7 +140,7 @@ public class ImportXmi {
   public List<XML> getAssociationsWithAttribute(List<XML> associations, String attributeName) {
     List<XML> filteredAssociations = new ArrayList<>();
     for (XML association : associations) {
-      if (notNull(getAttributeAsNode(association, attributeName))) {
+      if (getAttributeAsNode(association, attributeName) != null) {
         filteredAssociations.add(association);
       }
     }
@@ -194,7 +148,7 @@ public class ImportXmi {
   }
 
   /**
-   * save the name of an xmi-class as weaver individual
+   * Save the name of an xmi-class as weaver individual
    * @param xmiClasses
    */
   public void createWeaverIndividuals(HashMap<String, String> xmiClasses) {
@@ -209,8 +163,8 @@ public class ImportXmi {
 
   /**
    * Creates one hashmap from all xmi Classes
-   * @param xmiClasses: xmi nodes list
-   * @return HashMap<xmi-name, xmi-id> from every xmi Class
+   * @param xmiClasses
+   * @return
    */
   public HashMap<String, String> mapXmiClasses(List<XML> xmiClasses) {
     HashMap<String, String> map = new HashMap<String, String>();
@@ -222,49 +176,15 @@ public class ImportXmi {
     return map;
   }
 
-  /**
-   * check if an org.w3c.dom.Node is not null
-   * @param node: org.w3c.dom.Node
-   * @return true if not null, false if otherwise
-   */
-  private boolean notNull(org.w3c.dom.Node node) {
-    if (node != null) {
-      return true;
-    }
-    return false;
-  }
 
   /**
-   * Checks if a String is not null
-   * @param value: String
-   * @return true if not null, false if otherwise
-   */
-  private boolean notNull(String value) {
-    if (value != null) {
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Reads an xmi filePath from a classpath (test resource directory) or unixpath
-   * @return InputStream on succes or null on failure
-   */
-  public InputStream read() {
-    if (!hasPath(filePath)) {
-      return createInputStream(readFromTestClassResourceDirectory(filePath));
-    }
-    return createInputStream(readFromUnixPath(filePath));
-  }
-
-  /**
-   * reads a file from a unix path, returns the contents as byte array
-   * @param path i.e. "/dir/user/file.xml"
-   * @return byte[] result
+   * Reads a file from a unix path, returns the contents as byte array
+   * @param path
+   * @return
    */
   private byte[] readFromUnixPath(String path) {
     try {
-      File f = new File(filePath);
+      File f = new File(path);
       boolean isFile = f.exists();
       if (isFile) {
         return Files.readAllBytes(Paths.get(f.getAbsolutePath()));
@@ -276,13 +196,13 @@ public class ImportXmi {
   }
 
   /**
-   * reads a file from a class path test resource directory, returns the contents as byte array
-   * @param path: i.e. "file.xml"
-   * @return byte[] result
+   * Reads a file from a class path test resource directory, returns the contents as byte array
+   * @param path
+   * @return
    */
   private byte[] readFromTestClassResourceDirectory(String path) {
     try {
-      return FileUtils.readFileToByteArray(new File(getClass().getClassLoader().getResource(filePath).getFile()));
+      return FileUtils.readFileToByteArray(new File(getClass().getClassLoader().getResource(path).getFile()));
     } catch(IOException e) {
       System.out.println("FileUtils.readFileToByteArray fail");
     }
@@ -292,32 +212,15 @@ public class ImportXmi {
   /**
    * Creates an inputstream object from a byte array
    * @param contents
-   * @return InputStream on succes, null on failure
-   */
-  private InputStream createInputStream(byte[] contents) {
-    try {
-      return new ByteArrayInputStream(IOUtils.toByteArray(new ByteArrayInputStream(contents)));
-    } catch(IOException e) {
-      System.out.println("IOUtils.toByteArray() fail");
-    }
-    return null;
-  }
-
-  /**
-   * checks if the file has a forward slash
-   * @param fileName
    * @return
+   * @throws IOException
    */
-  private boolean hasPath(String fileName) {
-    if (fileName.matches("(.*)/(.*)")) {
-      //seems the be an unix path
-      return true;
-    }
-    return false;
+  private InputStream createInputStream(byte[] contents) throws IOException {
+    return new ByteArrayInputStream(IOUtils.toByteArray(new ByteArrayInputStream(contents)));
   }
 
   /**
-   * fetches a Node attribute and return that attribute as Node-object
+   * Fetches a Node attribute and return that attribute as Node-object
    * @param doc
    * @param attributeName
    * @return
@@ -329,7 +232,7 @@ public class ImportXmi {
   /**
    * Gets a value from a node i.e. an node attribute value
    * @param node
-   * @return String value
+   * @return
    */
   private String getValueFromNode(org.w3c.dom.Node node){
     return node.getTextContent();
@@ -338,7 +241,7 @@ public class ImportXmi {
   /**
    * Returns the textValue from a org.w3c.dom.Node as custom formatted String
    * @param node
-   * @return String
+   * @return
    */
   private String formatName(org.w3c.dom.Node node) {
     String[] partsOfNodeAttributeValue  = getValueFromNode(node).split(" ");
@@ -352,8 +255,8 @@ public class ImportXmi {
 
   /**
    * Ignores characters other then letters and return the result with letters only
-   * @param str input
-   * @return String formatted
+   * @param str
+   * @return
    */
   private String stripNonCharacters(String str) {
     StringBuilder result = new StringBuilder();
@@ -368,8 +271,8 @@ public class ImportXmi {
 
   /**
    * Transform the first char of the string to capital, and all other characters to small.
-   * @param str: String
-   * @return String result
+   * @param str
+   * @return
    */
   private String toCamelCase(String str) {
     str = str.toLowerCase();
@@ -380,9 +283,9 @@ public class ImportXmi {
 
   /**
    * Creates an Weaver Individual
-   * @param attributes: weaver entity attributes
-   * @param individualId: weaver entity id
-   * @return Weaver Entity on succes or null on failure
+   * @param attributes
+   * @param individualId
+   * @return
    */
   public Entity toWeaverIndividual(HashMap<String, Object> attributes, String individualId) {
     HashMap<String, Object> defaultAttributes = new HashMap<>();
@@ -396,8 +299,8 @@ public class ImportXmi {
       objects.linkEntity(parent.getId(), parent);
 
       //create first annotation collection
-      Entity aAnnotions = weaver.add(new HashMap<String, Object>(), EntityType.COLLECTION, weaver.createRandomUUID());
-      parent.linkEntity(RelationKeys.ANNOTATIONS, aAnnotions);
+      Entity aAnnotations = weaver.add(new HashMap<String, Object>(), EntityType.COLLECTION, weaver.createRandomUUID());
+      parent.linkEntity(RelationKeys.ANNOTATIONS, aAnnotations);
 
       //make one annotation for every individual
       HashMap<String, Object> annotationAttributes = new HashMap<>();
@@ -421,7 +324,7 @@ public class ImportXmi {
    * Creates an Weaver Annotation
    * @param attributes
    * @param id
-   * @return Weaver Entity on succes or null on failure
+   * @return
    */
   public Entity toWeaverAnnotation(HashMap<String, Object> attributes, String id) {
     try {
@@ -445,4 +348,27 @@ public class ImportXmi {
     return null;
   }
 
+  public Weaver getWeaver() {
+    return weaver;
+  }
+
+  public String getWeaverUrl() {
+    return weaverUrl;
+  }
+
+  public String getDatasetId() {
+    return datasetId;
+  }
+
+  public Entity getDataset() {
+    return dataset;
+  }
+
+  public InputStream getInputStream() {
+    return inputStream;
+  }
+
+  public void setInputStream(InputStream inputStream) {
+    this.inputStream = inputStream;
+  }
 }
