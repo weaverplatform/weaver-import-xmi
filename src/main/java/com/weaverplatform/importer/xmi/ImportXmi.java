@@ -3,10 +3,12 @@ package com.weaverplatform.importer.xmi;
 import com.jcabi.xml.XML;
 import com.jcabi.xml.XMLDocument;
 import com.weaverplatform.sdk.*;
+import com.weaverplatform.sdk.websocket.WeaverSocket;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
+import java.net.URI;
 import java.util.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -30,7 +32,7 @@ public class ImportXmi {
   public ImportXmi(String weaverUrl, String filePath, String datasetId) throws RuntimeException {
     if (notNull(weaverUrl) && notNull(filePath)) {
       weaver = new Weaver();
-      weaver.connect(weaverUrl);
+      weaver.connect(new WeaverSocket(URI.create(weaverUrl)));
 
       dataset = weaver.add(new HashMap<String, Object>(), EntityType.DATASET, datasetId);
 
@@ -49,6 +51,7 @@ public class ImportXmi {
    * @param args
    * args[0] = weaver connection uri i.e. http://weaver:port
    * args[1] = filePath (see also: constructor @param filePath)
+   * args[2] = name of model of weaver workbench
    */
   public static void main(String[] args) {
     ImportXmi importXmi = new ImportXmi(args[0], args[1], args[2]);
