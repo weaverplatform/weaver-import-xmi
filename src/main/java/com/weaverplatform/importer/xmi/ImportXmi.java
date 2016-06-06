@@ -21,6 +21,7 @@ import java.nio.file.Paths;
 public class ImportXmi {
 
   private Weaver weaver;
+  private String datasetId;
   private Entity dataset;
   private String filePath;
 
@@ -30,17 +31,11 @@ public class ImportXmi {
    * @param filePath specify as filename i.e. "filePath.xml" or unixpath i.e. "/usr/lib/input.xml"
    */
   public ImportXmi(String weaverUrl, String filePath, String datasetId) throws RuntimeException {
-    if (notNull(weaverUrl) && notNull(filePath)) {
+    if (notNull(weaverUrl) && notNull(filePath) && notNull(datasetId)) {
       weaver = new Weaver();
       weaver.connect(new WeaverSocket(URI.create(weaverUrl)));
-
-      dataset = weaver.add(new HashMap<String, Object>(), EntityType.DATASET, datasetId);
-
-      //create objects collection
-      Entity objects = weaver.add(new HashMap<String, Object>(), EntityType.COLLECTION, weaver.createRandomUUID());
-      dataset.linkEntity(RelationKeys.OBJECTS, objects);
-
       this.filePath = filePath;
+      this.datasetId = datasetId;
     } else {
       throw new RuntimeException("one or more constructor arguments are null");
     }
@@ -70,9 +65,31 @@ public class ImportXmi {
     //map the xmi classes to a hashmap
     //let jcabi fetch the xmi class nodes by the right xpath
     HashMap<String, String> xmiClasses = mapXmiClasses(xmldocument.nodes(xpathToXmiClasses));
+    System.out.println(xmiClasses.size());
+    createWeaverDataset();
     //map the xmiClasses to weaver as weaver individuals
-    createWeaverIndividuals(xmiClasses);
-    createWeaverAnnotations(getAssociationsWithAttribute(xmldocument.nodes(xpathToXmiAssociations), "name"), xmiClasses);
+    //createWeaverIndividuals(xmiClasses);
+    //createWeaverAnnotations(getAssociationsWithAttribute(xmldocument.nodes(xpathToXmiAssociations), "name"), xmiClasses);
+  }
+
+  public boolean createWeaverDataset(){
+    try{
+
+      dataset = weaver.add(new HashMap<String, Object>(), EntityType.DATASET, datasetId);
+
+      //create objects collection
+      Entity objects = weaver.add(new HashMap<String, Object>(), EntityType.COLLECTION, weaver.createRandomUUID());
+      dataset.linkEntity(RelationKeys.OBJECTS, objects);
+
+      System.out.println("createWeaverDataset");
+
+      return true;
+
+    }catch (Exception e){
+      System.out.println("createWeaverDataSetError : " + e.getMessage());
+    }
+
+    return false;
   }
 
   /**
@@ -395,7 +412,7 @@ public class ImportXmi {
       return parent;
 
     } catch (NullPointerException e) {
-      System.out.println("weaver connection error/node not found.");
+      System.out.println("weaver connection error/node not found. (toWeaverIndividual)");
     }
     return null;
   }
@@ -423,7 +440,7 @@ public class ImportXmi {
       return annotation;
 
     } catch (NullPointerException e) {
-      System.out.println("weaver connection error/node not found.");
+      System.out.println("weaver connection error/node not found. (toWeaverAnnotation)");
     }
     return null;
   }
