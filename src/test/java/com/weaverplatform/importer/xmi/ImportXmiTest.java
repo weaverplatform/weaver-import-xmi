@@ -1,5 +1,6 @@
 package com.weaverplatform.importer.xmi;
 
+import com.jcabi.xml.XML;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -9,47 +10,48 @@ import java.io.IOException;
  */
 public class ImportXmiTest {
 
-  private String argument0 = "http://192.168.99.100:9487";
-  private String argument1 = "/users/jonathansmit/Downloads/InformatieBackboneModel.xml";
-  private String argument2 = "testDataset";
+  private String weaverUrl = "http://docker:9487";
+  private String xmiPath = "/Users/bastiaan/Desktop/InformatieBackboneModel.xml";
+  private String datasetName = "model";
 
   @Test
   public void ImportXmiConstructorTest() throws IOException {
-    ImportXmi importXmi = new ImportXmi(argument0, argument1);
-    importXmi.readFromFile(argument2);
+    ImportXmi importXmi = new ImportXmi(weaverUrl, datasetName);
+    importXmi.readFromFile(xmiPath);
     importXmi.run();
   }
 
   @Test
   public void createWeaverDatasetTest() throws IOException {
-    ImportXmi importXmi = new ImportXmi(argument0, argument1);
-    importXmi.readFromFile(argument2);
+    ImportXmi importXmi = new ImportXmi(weaverUrl, datasetName);
+    importXmi.readFromFile(xmiPath);
     importXmi.createWeaverDataset();
   }
 
 
-//  @Test
-//  public void mapXmiAssociationsToWeaverAnnotationsTest() {
+  @Test
+  public void runXPath() {
+    
+    ImportXmi importXmi = new ImportXmi(weaverUrl, datasetName);
+
+    try {
+      importXmi.readFromFile(xmiPath);
+    } catch (IOException e) {
+      System.out.println(e);
+    }
+    
+    for(XML node : importXmi.queryXPath(ImportXmi.XPATH_TO_XMI_GENERALIZATIONS)) {
+      System.out.println(node);
+    }
+
+
+  }
 //
-//    XML doc = importXmi.getFormatedXML();
-//    //xpath to xmi classes
-//    String xpathToUMLClassNodes = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
-//    String xpathToUMLAssociationNodes = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Association";
-//    HashMap<String, String> xmiClasses = importXmi.mapXmiClasses(doc.nodes(xpathToUMLClassNodes));
-//    importXmi.createWeaverIndividuals(xmiClasses);
-//    importXmi.createWeaverAnnotations(importXmi.getAssociationsWithAttribute(doc.nodes(xpathToUMLAssociationNodes), "name"), xmiClasses);
-//
-//    assertEquals(xmiClasses.size(), 47);
-//  }
-//
-//  @Test
-//  public void mapSpecificXmiAssociationToWeaverAnnotationTest() {
-//
-//  }
+
 //
 //  @Test
 //  public void mapXmiClassesToWeaverIndividualsTest() {
-//    ImportXmi importXmi = new ImportXmi(argument0, argument1, argument2);
+//    ImportXmi importXmi = new ImportXmi(weaverUrl, xmiPath, datasetName);
 //    XML doc = importXmi.getXML();
 //    //xpath to xmi classes
 //    String xpathToUMLClassNodes = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
@@ -61,7 +63,7 @@ public class ImportXmiTest {
 //
 //  @Test
 //  public void mapXmiClassesTest() {
-//    ImportXmi importXmi = new ImportXmi(argument0, argument1, argument2);
+//    ImportXmi importXmi = new ImportXmi(weaverUrl, xmiPath, datasetName);
 //    XML doc = importXmi.getXML();
 //    String xpathToUMLClassNodes = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
 //    HashMap<String, String> xmiClasses = importXmi.mapXmiClasses(doc.nodes(xpathToUMLClassNodes));
@@ -71,19 +73,11 @@ public class ImportXmiTest {
 //
 //  @Test
 //  public void readTest() {
-//    ImportXmi importXmi = new ImportXmi(argument0, argument1, argument2);
+//    ImportXmi importXmi = new ImportXmi(weaverUrl, xmiPath, datasetName);
 //    InputStream fileContents = importXmi.read();
 //
 //    assertTrue(fileContents != null);
 //  }
 //
-//  @Test
-//  public void toWeaverIndividualTest() {
-//
-//  }
-//
-//  @Test
-//  public void toWeaverAnnotationTest() {
-//
-//  }
+
 }
