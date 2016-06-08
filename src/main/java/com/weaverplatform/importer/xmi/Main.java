@@ -16,8 +16,8 @@ public class Main {
     
     if (args.length == 0){
       weaverUrl = "http://docker:9487";
-      filePath  = "/Users/mohamad/Desktop/InformatieBackboneModel.xml";
-      datasetId = "dataset0";  
+      filePath  = "/Users/bastiaan/Desktop/InformatieBackboneModel.xml";
+      datasetId = "model";  
     }
     else {
       weaverUrl = args[0];
