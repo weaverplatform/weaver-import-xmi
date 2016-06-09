@@ -418,7 +418,7 @@ public class ImportXmi {
       HashMap<String, Object> subClassAnnotationAttributes = new HashMap<>();
       subClassAnnotationAttributes.put("label", "rdfs:subClassOf");
       subClassAnnotationAttributes.put("celltype", "individual");
-      Entity subClassAnnotation = toWeaverAnnotation(subClassAnnotationAttributes, individualId);
+      toWeaverAnnotation(subClassAnnotationAttributes, individualId);
 
       // Create collection properties
       Entity properties = weaver.collection();
@@ -433,13 +433,7 @@ public class ImportXmi {
       propertyAttributes.put("object", individualId);
 
       Entity nameProperty = weaver.add(propertyAttributes, EntityType.VALUE_PROPERTY, UUID.randomUUID().toString(), relations);
-
-
       properties.linkEntity(nameProperty.getId(), nameProperty);
-      
-      
-                                                        
-      
 
       return individual;
 
