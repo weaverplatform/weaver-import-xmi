@@ -34,15 +34,21 @@ public class ImportXmiTest {
     
     ImportXmi importXmi = new ImportXmi(weaverUrl, datasetName);
 
-    try {
-      importXmi.readFromFile(xmiPath);
-    } catch (IOException e) {
-      System.out.println(e);
-    }
-    
-    for(XML node : importXmi.queryXPath(ImportXmi.XPATH_TO_XMI_GENERALIZATIONS)) {
+
+    importXmi.readFromFile(xmiPath);
+
+//    System.out.println("CLASSES");
+//    for(XML node : importXmi.queryXPath(ImportXmi.XPATH_TO_XMI_CLASSES)) {
+//      System.out.println(node);
+//    }
+    System.out.println("ASSOCIATIONS");
+    for(XML node : importXmi.queryXPath(ImportXmi.XPATH_TO_XMI_ASSOCIATIONS)) {
       System.out.println(node);
     }
+//    System.out.println("GENERALSZ");
+//    for(XML node : importXmi.queryXPath(ImportXmi.XPATH_TO_XMI_GENERALIZATIONS)) {
+//      System.out.println(node);
+//    }
 
 
   }

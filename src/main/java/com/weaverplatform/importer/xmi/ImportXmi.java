@@ -34,6 +34,10 @@ public class ImportXmi {
   private InputStream inputStream;
   private XML xmldocument;
 
+  private HashMap<String, String> xmiClasses;
+  private HashMap<String, String> xmiValueClasses;
+  
+
   /**
    * Constructor
    *
@@ -97,13 +101,13 @@ public class ImportXmi {
     // Because we have formatted Jcabi XMLDocument, we can have special xpaths to the nodes we want
     // map the xmi classes to a hashmap
     // let jcabi fetch the xmi class nodes by the right xpath
-    HashMap<String, String> xmiClasses = mapXmiClasses(queryXPath(XPATH_TO_XMI_CLASSES));
+    mapXmiClasses();
 
     // Map the xmiClasses to weaver as weaver individuals
     createWeaverDataset();
-    createWeaverIndividuals(xmiClasses);
-    createWeaverGeneralizations(queryXPath(XPATH_TO_XMI_GENERALIZATIONS), xmiClasses);
-    createWeaverAnnotations(getAssociationsWithAttribute(queryXPath(XPATH_TO_XMI_ASSOCIATIONS), "name"), xmiClasses);
+    createWeaverIndividuals();
+    createWeaverGeneralizations(queryXPath(XPATH_TO_XMI_GENERALIZATIONS));
+    createWeaverAnnotations(getAssociationsWithAttribute(queryXPath(XPATH_TO_XMI_ASSOCIATIONS), "name"));
   }
 
   public void createWeaverDataset() {
@@ -131,9 +135,8 @@ public class ImportXmi {
    * Loop trough xmi-associations and map them to weaver as annotations
    *
    * @param generalizations
-   * @param xmiClasses
    */
-  public void createWeaverGeneralizations(List<XML> generalizations, HashMap<String, String> xmiClasses) {
+  public void createWeaverGeneralizations(List<XML> generalizations) {
     
     for (XML generalization : generalizations) {
 
@@ -156,16 +159,23 @@ public class ImportXmi {
    * Loop trough xmi-associations and map them to weaver as annotations
    *
    * @param associations
-   * @param xmiClasses
    */
-  public void createWeaverAnnotations(List<XML> associations, HashMap<String, String> xmiClasses) {
+  public void createWeaverAnnotations(List<XML> associations) {
+    
     for (XML association : associations) {
-      String xmiName = xmiClasses.get(getValidSubNodeValue(association));
+
+      String sourceId = getSourceOrTargetEAID(association, "source");
+      String targetId = getSourceOrTargetEAID(association, "target");
+      
       // Create weaver annotation
       HashMap<String, Object> attributes = new HashMap<>();
-      attributes.put("label", getValueFromNode(getAttributeAsNode(association, "name")));
-      attributes.put("celltype", "individual");
-      toWeaverAnnotation(attributes, xmiName);
+      attributes.put("label", association.node().getAttributes().getNamedItem("name").getTextContent());
+      if(xmiValueClasses.containsKey(targetId)) {
+        attributes.put("celltype", "string");
+      } else {
+        attributes.put("celltype", "individual");
+      }
+      toWeaverAnnotation(attributes, xmiClasses.get(sourceId));
     }
   }
 
@@ -175,7 +185,7 @@ public class ImportXmi {
    * @param association
    * @return
    */
-  private String getValidSubNodeValue(XML association) {
+  private String getSourceOrTargetEAID(XML association, String sourceOrTarget) {
     /** currentAssociation node
      *
      * <association>
@@ -191,8 +201,8 @@ public class ImportXmi {
      */
     for (XML associationEndNode : association.nodes("//UML.Association.connection/UML.AssociationEnd")) {
       for (XML associationTaggedValueNode : associationEndNode.nodes("//UML.ModelElement.taggedValue/UML.TaggedValue")) {
-        if (getValueFromNode(getAttributeAsNode(associationTaggedValueNode, "value")).equals("source")) {
-          return getValueFromNode(getAttributeAsNode(associationEndNode, "type"));
+        if (associationTaggedValueNode.node().getAttributes().getNamedItem("value").getTextContent().equals(sourceOrTarget)) {
+          return associationEndNode.node().getAttributes().getNamedItem("type").getTextContent();
         }
       }
     }
@@ -209,7 +219,7 @@ public class ImportXmi {
   public List<XML> getAssociationsWithAttribute(List<XML> associations, String attributeName) {
     List<XML> filteredAssociations = new ArrayList<>();
     for (XML association : associations) {
-      if (getAttributeAsNode(association, attributeName) != null) {
+      if (association.node().getAttributes().getNamedItem(attributeName) != null) {
         filteredAssociations.add(association);
       }
     }
@@ -218,10 +228,8 @@ public class ImportXmi {
 
   /**
    * Save the name of an xmi-class as weaver individual
-   *
-   * @param xmiClasses
    */
-  public void createWeaverIndividuals(HashMap<String, String> xmiClasses) {
+  public void createWeaverIndividuals() {
     Iterator it = xmiClasses.entrySet().iterator();
     while (it.hasNext()) {
       Map.Entry pair = (Map.Entry) it.next();
@@ -232,40 +240,31 @@ public class ImportXmi {
   }
 
   /**
-   * Creates one hashmap from all xmi Classes
+   * Creates two hashMaps from all xmi Classes
    *
-   * @param xmiClasses
    * @return
    */
-  public HashMap<String, String> mapXmiClasses(List<XML> xmiClasses) {
-    HashMap<String, String> map = new HashMap<String, String>();
-    for (XML xmiClass : xmiClasses) {
-      String name = formatName(getAttributeAsNode(xmiClass, "name"));
-      String xmiID = getValueFromNode(getAttributeAsNode(xmiClass, "xmi.id"));
-      map.put(xmiID, name);
+  public void mapXmiClasses() {
+    xmiClasses = new HashMap<>();
+    xmiValueClasses = new HashMap<>();
+    for (XML xmiClass : queryXPath(XPATH_TO_XMI_CLASSES)) {
+      String name = formatName(xmiClass.node().getAttributes().getNamedItem("name"));
+      String xmiID = xmiClass.node().getAttributes().getNamedItem("xmi.id").getTextContent();
+
+      NamedNodeMap xmlAttributes = xmiClass.node().getAttributes();
+
+      Node isLeaf = xmlAttributes.getNamedItem("isLeaf");
+      if(isLeaf == null) {
+        continue;
+      }
+
+      boolean stringAnnotation = "true".equals(isLeaf.getNodeValue());
+      if(stringAnnotation) {
+        xmiValueClasses.put(xmiID, name);
+      } else {
+        xmiClasses.put(xmiID, name);
+      }
     }
-    return map;
-  }
-
-  /**
-   * Fetches a Node attribute and return that attribute as Node-object
-   *
-   * @param doc
-   * @param attributeName
-   * @return
-   */
-  private org.w3c.dom.Node getAttributeAsNode(XML doc, String attributeName) {
-    return doc.node().getAttributes().getNamedItem(attributeName);
-  }
-
-  /**
-   * Gets a value from a node i.e. an node attribute value
-   *
-   * @param node
-   * @return
-   */
-  private String getValueFromNode(org.w3c.dom.Node node) {
-    return node.getTextContent();
   }
 
   /**
@@ -275,7 +274,7 @@ public class ImportXmi {
    * @return
    */
   private String formatName(org.w3c.dom.Node node) {
-    String[] partsOfNodeAttributeValue = getValueFromNode(node).split(" ");
+    String[] partsOfNodeAttributeValue = node.getTextContent().split(" ");
     StringBuffer newString = new StringBuffer();
     for (String partOfNodeAttributeValue : partsOfNodeAttributeValue) {
       partOfNodeAttributeValue = toCamelCase(stripNonCharacters(partOfNodeAttributeValue));
