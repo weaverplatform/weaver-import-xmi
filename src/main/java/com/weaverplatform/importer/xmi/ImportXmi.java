@@ -47,19 +47,40 @@ public class ImportXmi {
     weaver.connect(new WeaverSocket(URI.create(weaverUrl)));
   }
 
-  public void readFromInputStream(InputStream inputStream) throws IOException {
-    this.inputStream = inputStream;
-    xmldocument = new XMLDocument(toFormattedString(inputStream));
+  public void readFromInputStream(InputStream inputStream) {
+    try {
+      this.inputStream = inputStream;
+      xmldocument = new XMLDocument(toFormattedString(inputStream));
+    } catch (IOException e) {
+      throw new RuntimeException("Problem reading inputStream");
+    }
   }
 
-  public void readFromFile(String path) throws IOException {
-    this.inputStream = createInputStream(readFromUnixPath(path));
-    xmldocument = new XMLDocument(toFormattedString(inputStream));
+  public void readFromFile(String path) {
+    try {
+      File f = new File(path);
+      if (f.exists()) {
+        byte[] content = Files.readAllBytes(Paths.get(f.getAbsolutePath()));
+
+        this.inputStream = new ByteArrayInputStream(IOUtils.toByteArray(new ByteArrayInputStream(content)));
+        xmldocument = new XMLDocument(toFormattedString(inputStream));
+      } else {
+        throw new RuntimeException("File "+path+" not found!");
+      }
+    } catch (IOException e) {
+      throw new RuntimeException("FileUtils.readAllBytes fail");
+    }
   }
 
-  public void readFromResources(String path) throws IOException {
-    this.inputStream = createInputStream(readFromTestClassResourceDirectory(path));
-    xmldocument = new XMLDocument(toFormattedString(inputStream));
+  public void readFromResources(String path) {
+
+    try {
+      byte[] content =  FileUtils.readFileToByteArray(new File(getClass().getClassLoader().getResource(path).getFile()));
+      this.inputStream = new ByteArrayInputStream(IOUtils.toByteArray(new ByteArrayInputStream(content)));
+      xmldocument = new XMLDocument(toFormattedString(inputStream));
+    } catch (IOException e) {
+      throw new RuntimeException("FileUtils.readFileToByteArray fail");
+    }
   }
   
   public List<XML> queryXPath(String query) {
@@ -224,51 +245,6 @@ public class ImportXmi {
       map.put(xmiID, name);
     }
     return map;
-  }
-
-
-  /**
-   * Reads a file from a unix path, returns the contents as byte array
-   *
-   * @param path
-   * @return
-   */
-  private byte[] readFromUnixPath(String path) {
-    try {
-      File f = new File(path);
-      boolean isFile = f.exists();
-      if (isFile) {
-        return Files.readAllBytes(Paths.get(f.getAbsolutePath()));
-      }
-    } catch (IOException e) {
-      throw new RuntimeException("FileUtils.readAllBytes fail");
-    }
-    return null;
-  }
-
-  /**
-   * Reads a file from a class path test resource directory, returns the contents as byte array
-   *
-   * @param path
-   * @return
-   */
-  private byte[] readFromTestClassResourceDirectory(String path) {
-    try {
-      return FileUtils.readFileToByteArray(new File(getClass().getClassLoader().getResource(path).getFile()));
-    } catch (IOException e) {
-      throw new RuntimeException("FileUtils.readFileToByteArray fail");
-    }
-  }
-
-  /**
-   * Creates an inputstream object from a byte array
-   *
-   * @param contents
-   * @return
-   * @throws IOException
-   */
-  private InputStream createInputStream(byte[] contents) throws IOException {
-    return new ByteArrayInputStream(IOUtils.toByteArray(new ByteArrayInputStream(contents)));
   }
 
   /**
