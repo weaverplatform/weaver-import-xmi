@@ -23,9 +23,9 @@ import java.util.*;
  */
 public class ImportXmi {
 
-  public static final String XPATH_TO_XMI_CLASSES = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Class";
-  public static final String XPATH_TO_XMI_ASSOCIATIONS = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Association";
-  public static final String XPATH_TO_XMI_GENERALIZATIONS = "//XMI.content/UML.Model/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Package/UML.Namespace.ownedElement/UML.Generalization";
+  public static final String XPATH_TO_XMI_CLASSES = "//UML.Class";
+  public static final String XPATH_TO_XMI_ASSOCIATIONS = "//UML.Association";
+  public static final String XPATH_TO_XMI_GENERALIZATIONS = "//UML.Generalization";
 
   private Weaver weaver;
   private String weaverUrl;
