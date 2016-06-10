@@ -140,7 +140,7 @@ public class ImportXmi {
   public void createWeaverAnnotations(List<XML> associations, HashMap<String, String> xmiClasses) {
     for (XML association : associations) {
       String xmiName = xmiClasses.get(getValidSubNodeValue(association));
-      //create weaver annotation
+      // Create weaver annotation
       HashMap<String, Object> attributes = new HashMap<>();
       attributes.put("label", getValueFromNode(getAttributeAsNode(association, "name")));
       attributes.put("celltype", "individual");
@@ -241,7 +241,7 @@ public class ImportXmi {
         return Files.readAllBytes(Paths.get(f.getAbsolutePath()));
       }
     } catch (IOException e) {
-      System.out.println("FileUtils.readAllBytes fail");
+      throw new RuntimeException("FileUtils.readAllBytes fail");
     }
     return null;
   }
@@ -256,9 +256,8 @@ public class ImportXmi {
     try {
       return FileUtils.readFileToByteArray(new File(getClass().getClassLoader().getResource(path).getFile()));
     } catch (IOException e) {
-      System.out.println("FileUtils.readFileToByteArray fail");
+      throw new RuntimeException("FileUtils.readFileToByteArray fail");
     }
-    return null;
   }
 
   /**
@@ -364,8 +363,7 @@ public class ImportXmi {
       Entity properties = weaver.get(subEntity.getRelations().get(RelationKeys.PROPERTIES).getId());    
       
       if(subClassAnnotation == null || properties == null) {
-        System.out.println("problem finding annotations or properties with generalization of "+subType+" --> "+superType);
-        return;
+        throw new RuntimeException("problem finding annotations or properties with generalization of "+subType+" --> "+superType);
       }
         
       Map<String, ShallowEntity> relations = new HashMap<>();
@@ -382,7 +380,7 @@ public class ImportXmi {
       properties.linkEntity(nameProperty.getId(), nameProperty);
       
     } else {
-      System.out.println("skipping creation of generalization of "+subType+" --> "+superType);
+      throw new RuntimeException("skipping creation of generalization of "+subType+" --> "+superType);
     }
   }
 
@@ -438,9 +436,8 @@ public class ImportXmi {
       return individual;
 
     } catch (NullPointerException e) {
-      System.out.println("weaver connection error/node not found. (toWeaverIndividual)");
+      throw new RuntimeException("weaver connection error/node not found. (toWeaverIndividual)");
     }
-    return null;
   }
 
   /**
@@ -452,13 +449,13 @@ public class ImportXmi {
    */
   public Entity toWeaverAnnotation(HashMap<String, Object> attributes, String id) {
     try {
-      //retrieve parent
+      // Retrieve parent
       Entity individual = weaver.get(id);
 
-      //retrieve annotions collection
+      // Retrieve annotations collection
       ShallowEntity shallowAnnotations = individual.getRelations().get(RelationKeys.ANNOTATIONS);
 
-      //create first annotation
+      // Create first annotation
       Entity annotation = weaver.add(attributes == null ? new HashMap<String, Object>() : attributes, EntityType.ANNOTATION, weaver.createRandomUUID());
 
       Entity aAnnotations = weaver.get(shallowAnnotations.getId());
@@ -467,9 +464,8 @@ public class ImportXmi {
       return annotation;
 
     } catch (NullPointerException e) {
-      System.out.println("weaver connection error/node not found. (toWeaverAnnotation)");
+      throw new RuntimeException("weaver connection error/node not found. (toWeaverAnnotation)");
     }
-    return null;
   }
 
   public Weaver getWeaver() {
