@@ -26,6 +26,7 @@ public class ImportXmi {
   public static final String XPATH_TO_XMI_CLASSES = "//UML.Class";
   public static final String XPATH_TO_XMI_ASSOCIATIONS = "//UML.Association";
   public static final String XPATH_TO_XMI_GENERALIZATIONS = "//UML.Generalization";
+  public static final String XPATH_TO_XMI_DATATYPE = "//UML.Attribute[@name='DataType']//UML.TaggedValue[@tag='type']";
 
   private Weaver weaver;
   private String weaverUrl;
@@ -34,8 +35,8 @@ public class ImportXmi {
   private InputStream inputStream;
   private XML xmldocument;
 
-  private HashMap<String, String> xmiClasses;
-  private HashMap<String, String> xmiValueClasses;
+  private HashMap<String, String> xmiClasses;          // XMI_ID -> name (camel cased without ib:-prefix)
+  private HashMap<String, String> xmiValueClasses;     // XMI_ID -> datatype (e.g. xsd:string)
   
 
   /**
@@ -172,6 +173,7 @@ public class ImportXmi {
       attributes.put("label", association.node().getAttributes().getNamedItem("name").getTextContent());
       if(xmiValueClasses.containsKey(targetId)) {
         attributes.put("celltype", "string");
+        attributes.put("datatype", xmiValueClasses.get(targetId));
       } else {
         attributes.put("celltype", "individual");
       }
@@ -260,7 +262,20 @@ public class ImportXmi {
 
       boolean stringAnnotation = "true".equals(isLeaf.getNodeValue());
       if(stringAnnotation) {
-        xmiValueClasses.put(xmiID, name);
+        String datatype = null;
+        for(XML node : xmiClass.nodes(XPATH_TO_XMI_DATATYPE)) {
+
+          NamedNodeMap datatypeAttributes = node.node().getAttributes();
+
+          Node value = datatypeAttributes.getNamedItem("value");
+          if(value != null) {
+            datatype = value.getNodeValue();
+          }
+        }
+        if(datatype == null) {
+          throw new RuntimeException("Unable to find a datatype in the xmi model!");
+        }
+        xmiValueClasses.put(xmiID, datatype);
       } else {
         xmiClasses.put(xmiID, name);
       }

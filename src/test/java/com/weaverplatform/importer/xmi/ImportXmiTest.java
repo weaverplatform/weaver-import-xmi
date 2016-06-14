@@ -11,20 +11,20 @@ import java.io.IOException;
 public class ImportXmiTest {
 
   private String weaverUrl = "http://docker:9487";
-  private String xmiPath = "/Users/bastiaan/Desktop/InformatieBackboneModel.xml";
+  private String xmiPath = "InformatieBackboneModel.xml";
   private String datasetName = "model";
 
   @Test
   public void ImportXmiConstructorTest() throws IOException {
     ImportXmi importXmi = new ImportXmi(weaverUrl, datasetName);
-    importXmi.readFromFile(xmiPath);
+    importXmi.readFromResources(xmiPath);
     importXmi.run();
   }
 
   @Test
   public void createWeaverDatasetTest() throws IOException {
     ImportXmi importXmi = new ImportXmi(weaverUrl, datasetName);
-    importXmi.readFromFile(xmiPath);
+    importXmi.readFromResources(xmiPath);
     importXmi.createWeaverDataset();
   }
 
@@ -35,20 +35,24 @@ public class ImportXmiTest {
     ImportXmi importXmi = new ImportXmi(weaverUrl, datasetName);
 
 
-    importXmi.readFromFile(xmiPath);
+    importXmi.readFromResources(xmiPath);
 
 //    System.out.println("CLASSES");
 //    for(XML node : importXmi.queryXPath(ImportXmi.XPATH_TO_XMI_CLASSES)) {
 //      System.out.println(node);
 //    }
-    System.out.println("ASSOCIATIONS");
-    for(XML node : importXmi.queryXPath(ImportXmi.XPATH_TO_XMI_ASSOCIATIONS)) {
-      System.out.println(node);
-    }
+//    System.out.println("ASSOCIATIONS");
+//    for(XML node : importXmi.queryXPath(ImportXmi.XPATH_TO_XMI_ASSOCIATIONS)) {
+//      System.out.println(node);
+//    }
 //    System.out.println("GENERALSZ");
 //    for(XML node : importXmi.queryXPath(ImportXmi.XPATH_TO_XMI_GENERALIZATIONS)) {
 //      System.out.println(node);
 //    }
+    System.out.println("DATATYPES");
+    for(XML node : importXmi.queryXPath(ImportXmi.XPATH_TO_XMI_DATATYPE)) {
+      System.out.println(node);
+    }
 
 
   }
