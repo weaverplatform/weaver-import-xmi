@@ -109,6 +109,9 @@ public class ImportXmi {
     createWeaverIndividuals();
     createWeaverGeneralizations(queryXPath(XPATH_TO_XMI_GENERALIZATIONS));
     createWeaverAnnotations(getAssociationsWithAttribute(queryXPath(XPATH_TO_XMI_ASSOCIATIONS), "name"));
+    
+    // Close Weaver connection
+    weaver.close();
   }
 
   public void createWeaverDataset() {
