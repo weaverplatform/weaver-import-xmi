@@ -9,15 +9,15 @@ public class Main {
    * @param args
    * args[0] = weaver connection uri i.e. http://weaver:port
    * args[1] = filePath (see also: constructor @param filePath)
-   * args[2] = name of model of weaver workbench
+   * args[2] = name of model of weaver workbench                 
    */
   public static void main(String[] args) throws IOException {
     String weaverUrl, filePath, datasetId;
     
     if (args.length == 0){
       weaverUrl = "http://docker:9487";
-      filePath  = "/Users/mohamad/Desktop/InformatieBackboneModel.xml";
-      datasetId = "dataset0";  
+      filePath  = "/tmp/InformatieBackboneModel.xml";
+      datasetId = "model";  
     }
     else {
       weaverUrl = args[0];
