@@ -232,11 +232,10 @@ public class ImportXmi {
    * Save the name of an xmi-class as weaver individual
    */
   public void createWeaverIndividuals() {
-    Iterator it = xmiClasses.entrySet().iterator();
-    while (it.hasNext()) {
-      Map.Entry pair = (Map.Entry) it.next();
-      String xmiClassName = (String) pair.getValue();
-      //save to weaver as Individual
+    Iterator<Map.Entry<String, String>> iterator = xmiClasses.entrySet().iterator();
+    while (iterator.hasNext()) {
+      Map.Entry<String, String> pair = iterator.next();
+      String xmiClassName = pair.getValue();
       toWeaverIndividual(null, xmiClassName);
     }
   }
@@ -353,7 +352,7 @@ public class ImportXmi {
       Entity properties = weaver.get(subEntity.getRelations().get(RelationKeys.PROPERTIES).getId());    
       
       if(subClassAnnotation == null || properties == null) {
-        throw new RuntimeException("problem finding annotations or properties with generalization of "+subType+" --> "+superType);
+        throw new RuntimeException("Problem finding annotations or properties with generalization of "+subType+" --> "+superType+".");
       }
         
       Map<String, ShallowEntity> relations = new HashMap<>();
@@ -370,7 +369,7 @@ public class ImportXmi {
       properties.linkEntity(nameProperty.getId(), nameProperty);
       
     } else {
-      throw new RuntimeException("skipping creation of generalization of "+subType+" --> "+superType);
+      //throw new RuntimeException("Skipping creation of generalization of "+subType+" --> "+superType+".");
     }
   }
 
@@ -426,7 +425,7 @@ public class ImportXmi {
       return individual;
 
     } catch (NullPointerException e) {
-      throw new RuntimeException("weaver connection error/node not found. (toWeaverIndividual)");
+      throw new RuntimeException("Weaver connection error/node not found (toWeaverIndividual).");
     }
   }
 
@@ -454,7 +453,7 @@ public class ImportXmi {
       return annotation;
 
     } catch (NullPointerException e) {
-      throw new RuntimeException("weaver connection error/node not found. (toWeaverAnnotation)");
+      throw new RuntimeException("Weaver connection error/node not found (toWeaverAnnotation).");
     }
   }
 
