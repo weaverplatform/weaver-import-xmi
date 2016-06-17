@@ -249,7 +249,8 @@ public class ImportXmi {
     xmiClasses = new HashMap<>();
     xmiValueClasses = new HashMap<>();
     for (XML xmiClass : queryXPath(XPATH_TO_XMI_CLASSES)) {
-      String name = formatName(xmiClass.node().getAttributes().getNamedItem("name"));
+//      String name = formatName(xmiClass.node().getAttributes().getNamedItem("name"));
+      String name = xmiClass.node().getAttributes().getNamedItem("name").getNodeValue();
       String xmiID = xmiClass.node().getAttributes().getNamedItem("xmi.id").getTextContent();
 
       NamedNodeMap xmlAttributes = xmiClass.node().getAttributes();
