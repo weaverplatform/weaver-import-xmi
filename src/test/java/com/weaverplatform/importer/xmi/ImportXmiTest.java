@@ -1,7 +1,8 @@
 package com.weaverplatform.importer.xmi;
 
-import com.jcabi.xml.XML;
 import org.junit.Test;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import java.io.IOException;
 
@@ -25,7 +26,7 @@ public class ImportXmiTest {
   public void createWeaverDatasetTest() throws IOException {
     ImportXmi importXmi = new ImportXmi(weaverUrl, datasetName);
     importXmi.readFromResources(xmiPath);
-    importXmi.createWeaverDataset();
+    importXmi.initDataset();
   }
 
 
@@ -49,9 +50,32 @@ public class ImportXmiTest {
 //    for(XML node : importXmi.queryXPath(ImportXmi.XPATH_TO_XMI_GENERALIZATIONS)) {
 //      System.out.println(node);
 //    }
-    System.out.println("DATATYPES");
-    for(XML node : importXmi.queryXPath(ImportXmi.XPATH_TO_XMI_DATATYPE)) {
-      System.out.println(node);
+//    System.out.println("DATATYPES");
+//    NodeList nodes = importXmi.queryXPath(ImportXmi.XPATH_TO_XMI_DATATYPE);
+//    for(int i = 0; i < nodes.getLength(); i++) {
+//      Node node = nodes.item(i);
+//      System.out.println(node);
+//    }
+    System.out.println("ASSOCIATIONS");
+    NodeList nodes = importXmi.queryXPath(ImportXmi.XPATH_TO_XMI_ASSOCIATIONS);
+    for(int i = 0; i < nodes.getLength(); i++) {
+      Node node = nodes.item(i);
+      NodeList list;
+
+
+      list = importXmi.queryXPath(node, ImportXmi.XPATH_TO_XMI_ASSOCIATIONS_SOURCE);
+      System.out.println(list.getLength());
+      for(int j = 0; j < list.getLength(); j++) {
+        Node source = list.item(j);
+        System.out.println(source.getAttributes().getNamedItem("type").getNodeValue());
+      }
+
+      list = importXmi.queryXPath(node, ImportXmi.XPATH_TO_XMI_ASSOCIATIONS_TARGET);
+      System.out.println(list.getLength());
+      for(int j = 0; j < list.getLength(); j++) {
+        Node target = list.item(j);
+        System.out.println(target.getAttributes().getNamedItem("type").getNodeValue());
+      }
     }
 
 
