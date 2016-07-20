@@ -14,21 +14,13 @@ public class Main {
   public static void main(String[] args) throws IOException {
     String weaverUrl, filePath, datasetId;
     
-    if (args.length == 0){
-      weaverUrl = "http://docker:9487";
-      filePath  = "/tmp/InformatieBackboneModel.xml";
-      datasetId = "model";  
-    }
-    else {
-      weaverUrl = args[0];
-      filePath  = args[1];
-      datasetId = args[2];
-    }
+    weaverUrl = args[0];
+    filePath  = args[1];
+    datasetId = args[2];
     
     ImportXmi importXmi = new ImportXmi(weaverUrl, datasetId);
     importXmi.readFromFile(filePath);
     importXmi.run();
-    System.out.println("Finished");
-    System.exit(0);
+    importXmi.close();
   }
 }
