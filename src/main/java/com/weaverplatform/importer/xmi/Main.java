@@ -21,5 +21,6 @@ public class Main {
     ImportXmi importXmi = new ImportXmi(weaverUrl, datasetId);
     importXmi.readFromFile(filePath);
     importXmi.run();
+    importXmi.close();
   }
 }
