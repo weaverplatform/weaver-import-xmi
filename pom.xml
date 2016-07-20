@@ -24,6 +24,10 @@
         <developerConnection>scm:git:git@github.com:weaverplatform/weaver-importer-xmi.git</developerConnection>
     </scm>
 
+    <properties>
+        <additionalparam>-Xdoclint:none</additionalparam>
+    </properties>
+    
     <developers>
         <developer>
             <email>jonathan@sysunite.com</email>
