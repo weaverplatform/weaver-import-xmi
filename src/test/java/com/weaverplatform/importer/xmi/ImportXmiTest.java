@@ -1,10 +1,10 @@
 package com.weaverplatform.importer.xmi;
 
 import org.junit.Test;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by Jonathan Smit, Sysunite 2016
@@ -26,6 +26,12 @@ public class ImportXmiTest {
   public void createWeaverDatasetTest() throws IOException {
     ImportXmi importXmi = new ImportXmi(weaverUrl, datasetName);
     importXmi.readFromResources(xmiPath);
+  }
+
+  @Test
+  public void deAccentTest() {
+
+    assertEquals("lib:JeelBeil", IndividualCreator.deAccent("lib:JëelBeíl"));
   }
 
 
@@ -55,12 +61,18 @@ public class ImportXmiTest {
 //      Node node = nodes.item(i);
 //      System.out.println(node);
 //    }
-    System.out.println("ASSOCIATIONS");
-    NodeList nodes = importXmi.queryXPath(ImportXmi.XPATH_TO_XMI_ASSOCIATION_NAMES);
-    for(int i = 0; i < nodes.getLength(); i++) {
-      Node node = nodes.item(i);
-      System.out.println(node.getNodeValue());
-    }
+//    System.out.println("ASSOCIATIONS");
+//    NodeList nodes = importXmi.queryXPath(ImportXmi.XPATH_TO_XMI_ASSOCIATION_NAMES);
+//    for(int i = 0; i < nodes.getLength(); i++) {
+//      Node node = nodes.item(i);
+//      System.out.println(node.getNodeValue());
+//    }
+//    System.out.println("ASSOCIATIONS SOURCES");
+//    NodeList nodes = importXmi.queryXPath(ImportXmi.XPATH_TO_XMI_ASSOCIATIONS_SOURCE);
+//    for(int i = 0; i < nodes.getLength(); i++) {
+//      Node node = nodes.item(i);
+//      System.out.println(node.getNodeValue());
+//    }
 
 
   }
