@@ -59,7 +59,7 @@ public class ImportXmi {
     this.weaverUrl = weaverUrl;
     this.datasetId = datasetId;
 
-    this.weaver = new Weaver();
+    this.weaver = new Weaver("ins:");
     this.weaver.connect(new WeaverSocket(URI.create(weaverUrl)));
   }
 
