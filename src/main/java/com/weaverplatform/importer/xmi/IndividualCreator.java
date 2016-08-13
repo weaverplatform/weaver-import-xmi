@@ -10,6 +10,8 @@ import org.w3c.dom.NodeList;
 
 import java.text.Normalizer;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 
 /**
@@ -203,14 +205,14 @@ public class IndividualCreator {
 //        throw new RuntimeException("Problem finding annotations or properties with generalization of "+subType+" --> "+superType+".");
 //      }
 
-      Map<String, ShallowEntity> relations = new HashMap<>();
+      ConcurrentMap<String, ShallowEntity> relations = new ConcurrentHashMap<>();
       relations.put("subject", subEntity.toShallowEntity());
       relations.put("object", superEntity.toShallowEntity());
+      relations.put("predicate", predicates.get("rdfs:subClassOf").toShallowEntity());
 //      relations.put("annotation", subClassAnnotation);
 
-      HashMap<String, String> propertyAttributes = new HashMap<>();
+      ConcurrentHashMap<String, String> propertyAttributes = new ConcurrentHashMap<>();
       propertyAttributes.put("source", ImportXmi.source);
-      propertyAttributes.put("predicate", predicates.get("rdfs:subClassOf").getId());
 
       Entity nameProperty = weaver.add(propertyAttributes, EntityType.INDIVIDUAL_PROPERTY, UUID.randomUUID().toString(), relations);
 
@@ -230,7 +232,7 @@ public class IndividualCreator {
    */
   public Entity toWeaverIndividual(String individualId, boolean isRdfsClass) {
 
-    HashMap<String, String> defaultAttributes = new HashMap<>();
+    ConcurrentHashMap<String, String> defaultAttributes = new ConcurrentHashMap<>();
     defaultAttributes.put("name", individualId);
     defaultAttributes.put("source", ImportXmi.source);
 
@@ -261,33 +263,33 @@ public class IndividualCreator {
     Entity properties = weaver.collection();
     individual.linkEntity("properties", properties.toShallowEntity());
 
-    Map<String, ShallowEntity> relations;
-    HashMap<String, String> propertyAttributes;
+    ConcurrentMap<String, ShallowEntity> relations;
+    ConcurrentHashMap<String, String> propertyAttributes;
 
 
 
-    relations = new HashMap<>();
+    relations = new ConcurrentHashMap<>();
 
     // Set rdf:type to Class property
     if(isRdfsClass) {
       relations.put("subject", individual.toShallowEntity());
       relations.put("object", individuals.get("rdfs:Class").toShallowEntity());
+      relations.put("predicate", predicates.get("rdfs:label").toShallowEntity());
 //      relations.put("annotation", nameAnnotation);
 
-      propertyAttributes = new HashMap<>();
-      propertyAttributes.put("predicate", predicates.get("rdfs:label").getId());
+      propertyAttributes = new ConcurrentHashMap<>();
 
       Entity typeProperty = weaver.add(propertyAttributes, EntityType.INDIVIDUAL_PROPERTY, UUID.randomUUID().toString(), relations);
       properties.linkEntity(typeProperty.getId(), typeProperty.toShallowEntity());
     }
 
     // Set label property
-    relations = new HashMap<>();
+    relations = new ConcurrentHashMap<>();
     relations.put("subject", individual.toShallowEntity());
+    relations.put("predicate", predicates.get("rdfs:label").toShallowEntity());
 //      relations.put("annotation", nameAnnotation);
 
-    propertyAttributes = new HashMap<>();
-    propertyAttributes.put("predicate", predicates.get("rdfs:label").getId());
+    propertyAttributes = new ConcurrentHashMap<>();
     propertyAttributes.put("object", individualId);
 
     Entity nameProperty = weaver.add(propertyAttributes, EntityType.VALUE_PROPERTY, UUID.randomUUID().toString(), relations);

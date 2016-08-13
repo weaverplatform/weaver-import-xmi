@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This program is written to import xmi-data and map parts of it to Weaver objects by the weaver-sdk-java.
@@ -140,7 +141,7 @@ public class ViewCreator {
    */
   public Entity toWeaverView(String individualId) {
 
-    HashMap<String, String> defaultAttributes = new HashMap<>();
+    ConcurrentHashMap<String, String> defaultAttributes = new ConcurrentHashMap<>();
     defaultAttributes.put("name", individualId+" view");
     defaultAttributes.put("source", ImportXmi.source);
 
@@ -162,7 +163,7 @@ public class ViewCreator {
 
   public Entity createWeaverFilter(String predicate, String operation, String conditionType, String pointer) {
 
-    HashMap<String, String> typeFilterAttributes = new HashMap<>();
+    ConcurrentHashMap<String, String> typeFilterAttributes = new ConcurrentHashMap<>();
     typeFilterAttributes.put("label", predicate);
     typeFilterAttributes.put("predicate", predicate);
     typeFilterAttributes.put("celltype", conditionType);
@@ -171,7 +172,7 @@ public class ViewCreator {
     Entity conditions = weaver.collection();
     filter.linkEntity("conditions", conditions.toShallowEntity());
 
-    HashMap<String, String> conditionAttributes = new HashMap<>();
+    ConcurrentHashMap<String, String> conditionAttributes = new ConcurrentHashMap<>();
     conditionAttributes.put("operation", operation);
     conditionAttributes.put("individual", pointer);
     conditionAttributes.put("conditiontype", conditionType);
@@ -189,7 +190,7 @@ public class ViewCreator {
    * @param id
    * @return
    */
-  public Entity toWeaverAnnotation(HashMap<String, String> attributes, String id) {
+  public Entity toWeaverAnnotation(ConcurrentHashMap<String, String> attributes, String id) {
 
     // Retrieve parent
     Entity individual = weaver.get(id);
@@ -205,7 +206,7 @@ public class ViewCreator {
     Entity annotations = weaver.get(shallowAnnotations.getId());
 
     // Create first annotation
-    Entity annotation = weaver.add(attributes == null ? new HashMap<String, String>() : attributes, EntityType.ANNOTATION);
+    Entity annotation = weaver.add(attributes == null ? new ConcurrentHashMap<String, String>() : attributes, EntityType.ANNOTATION);
 
     annotations.linkEntity(annotation.getId(), annotation.toShallowEntity());
 

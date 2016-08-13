@@ -6,6 +6,7 @@ import org.w3c.dom.NodeList;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This program is written to import xmi-data and map parts of it to Weaver objects by the weaver-sdk-java.
@@ -108,12 +109,12 @@ public class PredicateCreator {
   }
   public Entity toWeaverPredicate(String predicateId, ShallowEntity subPropertyOf) {
 
-    HashMap<String, ShallowEntity> relations = new HashMap<>();
+    ConcurrentHashMap<String, ShallowEntity> relations = new ConcurrentHashMap<>();
     if(subPropertyOf != null) {
       relations.put("super", subPropertyOf);
     }
 
-    HashMap<String, String> attributes = new HashMap<>();
+    ConcurrentHashMap<String, String> attributes = new ConcurrentHashMap<>();
     attributes.put("preferredName", predicateNameFromId(predicateId));
     attributes.put("reversedName", predicateReversedNameFromId(predicateId));
     attributes.put("source", ImportXmi.source);
